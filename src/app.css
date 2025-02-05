@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.app-container{
+    display: flex;
+    height: 100vh;
+    width: 400px;
+    min-height: 815px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    flex-direction: column;
+}

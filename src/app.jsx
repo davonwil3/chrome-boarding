@@ -1,0 +1,35 @@
+import React, { useState } from "react";
+import ViewGuides from "./components/Viewguides";
+import CreateGuide from "./components/Createguide";
+
+
+
+const App = () => {
+  const [history, setHistory] = useState(["view-guides"]); // Tracks visited sections
+
+  const navigateTo = (page) => {
+    setHistory([...history, page]); // Push new page to history
+  };
+
+  const goBack = () => {
+    if (history.length > 1) {
+      setHistory(history.slice(0, -1)); // Remove last page
+    }
+  };
+
+  // Get the current section
+  const currentPage = history[history.length - 1];
+
+  return (
+       <div className="flex flex-col fixed top-0 left-0 h-screen w-[400px] min-h-[815px] bg-red-500">
+      <div className="text-lg h-[70px]">Boarding Party</div>
+    
+      
+    
+      {/* Render Components Based on Page */}
+   
+    </div>
+  );
+};
+
+export default App;

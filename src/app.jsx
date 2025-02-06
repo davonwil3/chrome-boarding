@@ -21,12 +21,12 @@ const App = () => {
   const currentPage = history[history.length - 1];
 
   return (
-       <div className="flex flex-col fixed top-0 left-0 h-screen w-[400px] min-h-[815px] bg-red-500">
-      <div className="text-lg h-[70px]">Boarding Party</div>
-    
+    <div className="flex flex-col fixed top-0 left-0 h-screen w-[400px] min-h-[815px] bg-red-500">
+      <div className="text-lg h-[70px] mx-auto p-4">Boarding Party</div>
       
-    
       {/* Render Components Based on Page */}
+      {currentPage === "view-guides" && <ViewGuides navigateTo={navigateTo} />}
+      {currentPage === "create-guide" && <CreateGuide navigateTo={navigateTo} />}
    
     </div>
   );

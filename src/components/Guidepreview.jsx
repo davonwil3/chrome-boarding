@@ -5,6 +5,7 @@ import { faGear } from '@fortawesome/pro-light-svg-icons';
 
 export default function Guidepreview({ navigateTo }) {
     const [showTooltip, setShowTooltip] = React.useState(false);
+    // Add a step to the guide
 
     return (
         <div className="flex flex-col w-full h-full p-8 text-white ">

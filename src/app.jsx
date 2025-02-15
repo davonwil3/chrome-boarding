@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import ViewGuides from "./components/Viewguides";
 import CreateGuide from "./components/Createguide";
 import GuidePreview from "./components/Guidepreview";
+import ModalsSection from "./components/Modalssection";
 
 const App = () => {
   const [history, setHistory] = useState(["view-guides"]); // Tracks visited sections
@@ -33,6 +34,8 @@ const App = () => {
       {currentPage === "view-guides" && <ViewGuides navigateTo={navigateTo} />}
       {currentPage === "create-guide" && <CreateGuide navigateTo={navigateTo} />}
       {currentPage === "guide-preview" && <GuidePreview navigateTo={navigateTo} />}
+      {currentPage === "modal-section" && <ModalsSection navigateTo={navigateTo} />}
+
     </div>
   );
 };

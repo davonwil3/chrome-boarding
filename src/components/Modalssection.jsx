@@ -8,7 +8,7 @@ import ImageTool from "@editorjs/image";
 export default function ModalsSection({ navigateTo }) {
   const editorRef = useRef(null);
   const [isDevMode, setIsDevMode] = useState(false);
-  const [showModal, setShowModal] = useState(false); // Track modal state in React (dev mode)
+  const [showModal, setShowModal] = useState(false); // Track modal state in React (dev mode) env
 
   useEffect(() => {
     // Detect development mode

@@ -1,145 +1,132 @@
-import React, { useEffect, useRef, useState } from "react";
-import EditorJS from "@editorjs/editorjs";
-import Header from "@editorjs/header";
-import Paragraph from "@editorjs/paragraph";
-import List from "@editorjs/list";
-import ImageTool from "@editorjs/image";
+import React, { useState } from "react";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Heading from "@tiptap/extension-heading";
+import { BulletList, OrderedList } from "@tiptap/extension-list";
 
-export default function ModalsSection({ navigateTo }) {
-  const editorRef = useRef(null);
-  const [isDevMode, setIsDevMode] = useState(false);
-  const [showModal, setShowModal] = useState(false); // Track modal state in React (dev mode) env
+import Image from "@tiptap/extension-image";
+import TextAlign from "@tiptap/extension-text-align";
 
-  useEffect(() => {
-    // Detect development mode
-    if (window.location.hostname === "localhost") {
-      setIsDevMode(true);
-    }
 
-    // Initialize Editor.js inside the sidebar if not already initialized
-    if (!editorRef.current) {
-      editorRef.current = new EditorJS({
-        holder: "editorjs",
-        tools: {
-          header: Header,
-          paragraph: Paragraph,
-          list: List,
-          image: {
-            class: ImageTool,
-            config: {
-              endpoints: {
-                byFile: "https://your-image-upload-api.com/upload",
-              },
-            },
-          },
-        },
-      });
-    }
-  }, []);
-
-  const createCustomModal = async () => {
-    const editor = editorRef.current;
-    const output = await editor.save();
-
-    let modal = window.parent.document.getElementById("boarding-modal");
-    if (modal) modal.remove();
-
-    modal = window.parent.document.createElement("div");
-    modal.id = "boarding-modal";
-    modal.style.position = "fixed";
-    modal.style.top = "0";
-    modal.style.left = "0";
-    modal.style.width = "100vw";
-    modal.style.height = "100vh";
-    modal.style.backgroundColor = "rgba(0,0,0,0.5)";
-    modal.style.display = "flex";
-    modal.style.justifyContent = "center";
-    modal.style.alignItems = "center";
-    modal.style.zIndex = "10000";
-
-    const modalContent = window.parent.document.createElement("div");
-    modalContent.style.width = "400px";
-    modalContent.style.padding = "20px";
-    modalContent.style.backgroundColor = "white";
-    modalContent.style.borderRadius = "10px";
-    modalContent.style.boxShadow = "0px 4px 6px rgba(0, 0, 0, 0.1)";
-
-    // Render user-created blocks inside the modal
-    output.blocks.forEach((block) => {
-      let el;
-      if (block.type === "paragraph") {
-        el = document.createElement("p");
-        el.innerText = block.data.text;
-      } else if (block.type === "header") {
-        el = document.createElement(`h${block.data.level}`);
-        el.innerText = block.data.text;
-      } else if (block.type === "list") {
-        el = document.createElement(block.data.style === "unordered" ? "ul" : "ol");
-        block.data.items.forEach((item) => {
-          const li = document.createElement("li");
-          li.innerText = item;
-          el.appendChild(li);
-        });
-      } else if (block.type === "image") {
-        el = document.createElement("img");
-        el.src = block.data.file.url;
-        el.style.maxWidth = "100%";
-      }
-      if (el) {
-        modalContent.appendChild(el);
-      }
-    });
-
-    // Close button
-    const closeButton = window.parent.document.createElement("button");
-    closeButton.innerText = "Close";
-    closeButton.style.marginTop = "10px";
-    closeButton.style.padding = "10px";
-    closeButton.style.backgroundColor = "#1E3A8A";
-    closeButton.style.color = "white";
-    closeButton.style.border = "none";
-    closeButton.style.cursor = "pointer";
-    closeButton.style.borderRadius = "5px";
-    closeButton.onclick = () => modal.remove();
+export default function TiptapBlockEditor() {
+  const [showModal, setShowModal] = useState(false);
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Heading.configure({ levels: [1, 2, 3, 4] }),
+      BulletList,
+      OrderedList,
+      Image.configure(),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+    ],
     
-    modalContent.appendChild(closeButton);
-    modal.appendChild(modalContent);
-    window.parent.document.body.appendChild(modal);
+    content: "<p>Start editing...</p>",
+  });
+
+  const addBlock = (type) => {
+    if (!editor) return;
+
+    switch (type) {
+      case "heading":
+        editor.chain().focus().toggleHeading({ level: 2 }).run();
+        break;
+      case "paragraph":
+        editor.chain().focus().insertContent("<p>New paragraph...</p>").run();
+        break;
+      case "list":
+        editor.chain().focus().toggleBulletList().run();
+        break;
+      case "image":
+        const url = prompt("Enter image URL:");
+        if (url) {
+          editor.chain().focus().setImage({ src: url }).run();
+        }
+        break;
+      case "button":
+        editor.chain().focus().insertContent('<button class="bg-blue-500 text-white px-4 py-2 rounded">Click Me</button>').run();
+        break;
+      default:
+        break;
+    }
   };
 
   return (
     <div className="p-4">
-      <h2 className="text-lg font-bold text-white">Custom Modal Builder</h2>
-      <div id="editorjs" className="bg-gray-100 p-4 rounded-md"></div>
-
       <button
-        onClick={createCustomModal}
-        className="mt-4 bg-white text-[#1E3A8A] px-4 py-2 rounded-lg"
+        onClick={() => setShowModal(true)}
+        className="bg-blue-600 text-white px-4 py-2 rounded"
       >
-        Inject Custom Modal
+        Open Block Editor
       </button>
 
-      {/* Show Modal Inside React for Development Mode */}
-      {isDevMode && showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-            <h2 className="text-xl font-bold text-gray-800">
-              Preview Mode: Custom Modal
-            </h2>
-            <p className="text-gray-600 mt-2">
-              This modal is inside React (development mode).
-            </p>
+      {showModal && (
+        <div className="fixed inset-0 flex justify-center items-center z-50">
+          {/* Background overlay */}
+          <div
+            className="fixed inset-0 bg-black opacity-50"
+            onClick={() => setShowModal(false)}
+          ></div>
+
+          {/* Modal content */}
+          <div className="relative bg-white rounded-lg shadow-lg w-full max-w-3xl p-6">
+            {/* Close Button */}
             <button
               onClick={() => setShowModal(false)}
-              className="mt-4 bg-[#1E3A8A] text-white px-4 py-2 rounded"
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
             >
-              Close
+              ✖
             </button>
+
+            {/* Block Picker (Like Userpilot) */}
+            <div className="flex space-x-2 mb-4">
+              <button
+                onClick={() => addBlock("heading")}
+                className="bg-gray-200 px-3 py-2 rounded text-sm"
+              >
+                ➕ Header
+              </button>
+              <button
+                onClick={() => addBlock("paragraph")}
+                className="bg-gray-200 px-3 py-2 rounded text-sm"
+              >
+                ➕ Paragraph
+              </button>
+              <button
+                onClick={() => addBlock("list")}
+                className="bg-gray-200 px-3 py-2 rounded text-sm"
+              >
+                ➕ List
+              </button>
+              <button
+                onClick={() => addBlock("image")}
+                className="bg-gray-200 px-3 py-2 rounded text-sm"
+              >
+                🖼 Image
+              </button>
+              <button
+                onClick={() => addBlock("button")}
+                className="bg-gray-200 px-3 py-2 rounded text-sm"
+              >
+                🔘 Button
+              </button>
+            </div>
+
+            {/* Editor Content */}
+            <div className="border p-4 rounded bg-gray-100">
+              <EditorContent editor={editor} />
+            </div>
+
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => setShowModal(false)}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Save & Close
+              </button>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 }
-
-

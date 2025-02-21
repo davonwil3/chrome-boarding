@@ -61,7 +61,7 @@ export default function TiptapBlockEditor() {
 
       {showModal && (
         <div className="fixed inset-0 flex justify-center items-center z-50">
-          {/* Background overlay */}
+        
           <div
             className="fixed inset-0 bg-black opacity-50"
             onClick={() => setShowModal(false)}

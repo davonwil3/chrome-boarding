@@ -67,7 +67,6 @@ export default function TiptapBlockEditor() {
             onClick={() => setShowModal(false)}
           ></div>
 
-          {/* Modal content */}
           <div className="relative bg-white rounded-lg shadow-lg w-full max-w-3xl p-6">
             {/* Close Button */}
             <button

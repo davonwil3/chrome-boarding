@@ -1,0 +1,26 @@
+{
+    "manifest_version": 3,
+    "name": "Boarding Chrome Extension",
+    "version": "1.0",
+    "description": "A Chrome extension for onboarding guides.",
+    "permissions": ["storage", "activeTab", "scripting"],
+    "host_permissions": ["<all_urls>"],
+    "web_accessible_resources": [
+      {
+        "resources": ["index.html", "static/js/*.js", "static/css/*.css"],
+        "matches": ["<all_urls>"]
+      }
+    ],
+    "action": {
+      "default_icon": {
+        "16": "tooltip.png",
+        "48": "tooltip.png",
+        "128": "tooltip.png"
+      }
+    },
+    "background": {
+      "service_worker": "background.js"
+    }
+  }
+  
+  

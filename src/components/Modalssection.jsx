@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTextSize, faH1, faImage, faVideo, faRectangleWide, faCircleDot, faInputText, faFileLines } from '@fortawesome/pro-regular-svg-icons';
 
@@ -10,6 +10,12 @@ export default function ModalBlockEditor() {
   const [blocks, setBlocks] = useState([]);
   // For showing tooltip on a block; store the index of the block where plus was clicked.
   const [tooltipIndex, setTooltipIndex] = useState(null);
+  // Store the ID of the new image block to update it later
+  const [currentImageBlockId, setCurrentImageBlockId] = useState(null);
+
+  const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
+
 
   // Inserts a new block after the given index.
   const addBlock = (index, type) => {
@@ -23,6 +29,7 @@ export default function ModalBlockEditor() {
     }
     setBlocks(newBlocks);
     setTooltipIndex(null);
+    return newBlock.id;
   };
 
   // Updates the content for a block.
@@ -53,7 +60,39 @@ export default function ModalBlockEditor() {
     ];
     setBlocks(newBlocks);
   };
+  // When the "Image" button is clicked:
+  const handleAddImageBlock = (index) => {
+    const newId = addBlock(index, "image");
+    setCurrentImageBlockId(newId);
+    // Increase delay to 200ms to ensure the new block is added
+    setTimeout(() => {
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
+    }, 200);
+  };
 
+  // File input change handler
+  const handleFileChange = (id, file) => {
+    console.log("File selected:", file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      console.log("File loaded, result:", e.target.result);
+      updateBlockContent(id, e.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddVideoBlock = (index) => {
+    const newId = addBlock(index, "video");
+    setCurrentImageBlockId(newId);
+    // Increase delay to 200ms to ensure the new block is added
+    setTimeout(() => {
+      if (videoInputRef.current) {
+        videoInputRef.current.click();
+      }
+    }, 200);
+  }
 
   return (
     <div className="p-4">
@@ -63,6 +102,36 @@ export default function ModalBlockEditor() {
       >
         Open Block Editor
       </button>
+      {/* Hidden file input */}
+      <input
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (file && currentImageBlockId) {
+            handleFileChange(currentImageBlockId, file);
+            setCurrentImageBlockId(null);
+            e.target.value = ""; // Reset file input
+          }
+        }}
+      />
+      {/* hidden file input for video */}
+      <input
+        type="file"
+        accept="video/*"
+        ref={videoInputRef}
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (file && currentImageBlockId) {
+            handleFileChange(currentImageBlockId, file);
+            setCurrentImageBlockId(null);
+            e.target.value = ""; // Reset file input
+          }
+        }}
+      />
 
       {showModal && (
         <div className="fixed inset-0 flex justify-center items-center z-50">
@@ -108,22 +177,34 @@ export default function ModalBlockEditor() {
                     )}
                     {block.type === "image" && (
                       <div>
-                        <input
-                          type="text"
-                          placeholder="Enter image URL"
-                          value={block.content}
-                          onChange={(e) =>
-                            updateBlockContent(block.id, e.target.value)
-                          }
-                          className="w-full border p-1 rounded mb-2"
-                        />
-                        {block.content && (
-                          <img
-                            src={block.content}
-                            alt=""
-                            className="max-w-full rounded"
-                          />
-                        )}
+
+                        <div>
+                          {block.content ? (
+                            <img
+                              src={block.content}
+                              alt=""
+                              className="max-w-sm rounded"
+                            />
+                          ) : (
+                            <div className="text-gray-500">No image selected</div>
+                          )}
+                        </div>
+
+                      </div>
+                    )}
+                    {block.type === "video" && (
+                      <div>
+                        <div>
+                          {block.content ? (
+                            <video
+                              src={block.content}
+                              controls
+                              className="max-w-full w-full rounded"
+                            />
+                          ) : (
+                            <div className="text-gray-500">No video selected</div>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -154,8 +235,6 @@ export default function ModalBlockEditor() {
                         +
                       </button>
                     </div>
-
-
                   </div>
                 ))}
 
@@ -216,14 +295,14 @@ export default function ModalBlockEditor() {
                           <span>Header</span>
                         </button>
                         <button
-                          onClick={() => addBlock(tooltipIndex, "image")}
+                          onClick={() => handleAddImageBlock(tooltipIndex)}
                           className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                         >
                           <FontAwesomeIcon icon={faImage} className="mb-1" size="xl" />
                           <span>Image</span>
                         </button>
                         <button
-                          onClick={() => addBlock(tooltipIndex, "video")}
+                          onClick={() => handleAddVideoBlock(tooltipIndex)}
                           className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                         >
                           <FontAwesomeIcon icon={faVideo} className="mb-1" size="xl" />

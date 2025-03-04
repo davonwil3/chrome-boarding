@@ -39,7 +39,7 @@ export default function ModalBlockEditor() {
     if (type === "radio") {
       newBlock.content = ["Option 1", "Option 2", "Option3"];
     }
-    
+
     idCounterRef.current += 1; // increment the counter
     const newBlocks = [...blocks];
     // if index is -1, insert at beginning.
@@ -231,12 +231,12 @@ export default function ModalBlockEditor() {
                     {block.type === "image" && (
                       <div>
 
-                        <div>
+                        <div className="flex items-center justify-center">
                           {block.content ? (
                             <img
                               src={block.content}
                               alt=""
-                              className="max-w-sm rounded"
+                              className="max-w-sm rounded "
                             />
                           ) : (
                             <div className="text-gray-500">No image selected</div>

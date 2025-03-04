@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTextSize, faH1, faImage, faVideo, faRectangleWide, faCircleDot, faInputText, faFileLines, faTrash } from '@fortawesome/pro-regular-svg-icons';
+import { faHeading, faAlignCenter, faAlignRight, faAlignLeft, faCaretDown } from '@fortawesome/pro-regular-svg-icons';
+
 
 
 export default function ModalBlockEditor() {
@@ -20,18 +22,8 @@ export default function ModalBlockEditor() {
   // Use a ref to store a unique id counter.
   const idCounterRef = useRef(1);
 
-  useEffect(() => {
-    // If it's a radio block with no real array, set it to the default
-    setBlocks((prev) =>
-      prev.map((b) => {
-        if (b.id === blocks.id && b.type === "radio" && !Array.isArray(b.content)) {
-          return { ...b, content: ["Option 1", "Option 2", "Option 3"] };
-        }
-        return b;
-      })
-    );
-  }, [blocks]);
-  
+
+
 
   // Inserts a new block after the given index.
   const addBlock = (index, type) => {
@@ -39,6 +31,14 @@ export default function ModalBlockEditor() {
     if (type === "radio") {
       newBlock.content = ["Option 1", "Option 2", "Option3"];
     }
+
+    if (type === "header") {
+      // Default to h2 if you like
+      newBlock.level = "h2";
+      // Optionally set alignment
+      newBlock.alignment = "left";
+    }
+
 
     idCounterRef.current += 1; // increment the counter
     const newBlocks = [...blocks];
@@ -145,6 +145,190 @@ export default function ModalBlockEditor() {
     );
   };
 
+  // Tracks which block is currently "active" (clicked on)
+  const [activeBlockId, setActiveBlockId] = useState(null);
+
+  // Toggles a block’s active state when clicked
+  const handleBlockClick = (blockId) => {
+    setActiveBlockId((prevId) => (prevId === blockId ? null : blockId));
+  };
+
+  function renderSettingsBar(block) {
+    switch (block.type) {
+      case "text":
+        return (
+          <div className="p-2">
+            <p className="font-bold">Text Block Settings</p>
+            {/* Example: text size toggle, color pickers, etc. */}
+            <button className="border px-2 py-1 mr-2">B</button>
+            <button className="border px-2 py-1">I</button>
+          </div>
+        );
+      case "header":
+        return (
+          <HeaderSettings block={block} />
+        );
+      case "image":
+        return (
+          <div className="p-2">
+            <p className="font-bold">Image Block Settings</p>
+            {/* Example: image width, border radius, etc. */}
+            <button className="border px-2 py-1 mr-2">Change URL</button>
+            <button className="border px-2 py-1">Resize</button>
+          </div>
+        );
+      default:
+        return (
+          <div className="p-2">
+            <p>No specific settings for this type.</p>
+          </div>
+        );
+    }
+  }
+
+  // Update the heading level (h1, h2, h3)
+  const updateHeadingLevel = (blockId, newLevel) => {
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((block) =>
+        block.id === blockId ? { ...block, level: newLevel } : block
+      )
+    );
+  };
+
+  // Update the alignment (left, center, right)
+  const updateAlignment = (blockId, alignment) => {
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((block) =>
+        block.id === blockId ? { ...block, alignment } : block
+      )
+    );
+  };
+
+  // Render the settings bar for a header block
+  const HeaderSettings = ({ block }) => {
+    const [showHeadingDropdown, setShowHeadingDropdown] = useState(false);
+    const [showAlignmentDropdown, setShowAlignmentDropdown] = useState(false);
+  
+    const handleHeadingSelect = (level) => {
+      updateHeadingLevel(block.id, level);
+      setShowHeadingDropdown(false);
+    };
+  
+    const handleAlignmentSelect = (alignment) => {
+      updateAlignment(block.id, alignment);
+      setShowAlignmentDropdown(false);
+    };
+  
+    return (
+      <div className="p-4 bg-white shadow-md rounded flex items-center space-x-6">
+        {/* Heading Level Dropdown */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+             
+              setShowHeadingDropdown(!showHeadingDropdown);
+            }}
+            className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+          >
+            <FontAwesomeIcon icon={faHeading} />
+            
+            <FontAwesomeIcon icon={faCaretDown} />
+          </button>
+          {showHeadingDropdown && (
+            <div className="absolute z-10 mt-2 w-28 bg-white border border-gray-300 rounded shadow-md">
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+                
+                  handleHeadingSelect("h1");
+                }}
+              >
+              
+                <span>H1</span>
+              </button>
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+               
+                  handleHeadingSelect("h2");
+                }}
+              >
+              
+                <span>H2</span>
+              </button>
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+                
+                  handleHeadingSelect("h3");
+                }}
+              >
+               
+                <span>H3</span>
+              </button>
+            </div>
+          )}
+        </div>
+  
+        {/* Alignment Dropdown */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAlignmentDropdown(!showAlignmentDropdown);
+            }}
+            className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+          >
+            {block.alignment === "center" && (
+              <FontAwesomeIcon icon={faAlignCenter} />
+            )}
+            {block.alignment === "right" && (
+              <FontAwesomeIcon icon={faAlignRight} />
+            )}
+            {(!block.alignment || block.alignment === "left") && (
+              <FontAwesomeIcon icon={faAlignLeft} />
+            )}
+            <FontAwesomeIcon icon={faCaretDown} />
+          </button>
+          {showAlignmentDropdown && (
+            <div className="absolute z-10 mt-2 w-28 bg-white border border-gray-300 rounded shadow-md">
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAlignmentSelect("left");
+                }}
+              >
+                <FontAwesomeIcon icon={faAlignLeft} className="mr-2" />
+                <span>Left</span>
+              </button>
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAlignmentSelect("center");
+                }}
+              >
+                <FontAwesomeIcon icon={faAlignCenter} className="mr-2" />
+                <span>Center</span>
+              </button>
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAlignmentSelect("right");
+                }}
+              >
+                <FontAwesomeIcon icon={faAlignRight} className="mr-2" />
+                <span>Right</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
 
 
   return (
@@ -198,85 +382,110 @@ export default function ModalBlockEditor() {
                 ✖
               </button>
               <div className="">
-                {blocks.map((block, index) => (
-                  <div
-                    key={block.id}
-                    className="relative group p-4 border border-transparent hover:border-blue-600"
-                  >
-                    {/* Editable content */}
-                    {block.type === "text" && (
-                      <div
-                        contentEditable
-                        suppressContentEditableWarning
-                        className="min-h-[40px] outline-none"
-                        onBlur={(e) =>
-                          updateBlockContent(block.id, e.target.innerText)
-                        }
-                      >
-                        {block.content || "Enter text..."}
-                      </div>
-                    )}
-                    {block.type === "header" && (
-                      <h1
-                        contentEditable
-                        suppressContentEditableWarning
-                        className="min-h-[40px] text-2xl font-bold outline-none"
-                        onBlur={(e) =>
-                          updateBlockContent(block.id, e.target.innerText)
-                        }
-                      >
-                        {block.content || "Header"}
-                      </h1>
-                    )}
-                    {block.type === "image" && (
-                      <div>
+                {blocks.map((block, index) => {
 
-                        <div className="flex items-center justify-center">
-                          {block.content ? (
-                            <img
-                              src={block.content}
-                              alt=""
-                              className="max-w-sm rounded "
-                            />
-                          ) : (
-                            <div className="text-gray-500">No image selected</div>
-                          )}
+                  const isActive = block.id === activeBlockId;
+                  return (
+                    <div
+                      key={block.id}
+                      className="relative group p-4 border border-transparent hover:border-blue-600"
+                      onClick={() => handleBlockClick(block.id)}
+                    >
+                      {/* Editable content */}
+                      {block.type === "text" && (
+                        <div
+                          contentEditable
+                          suppressContentEditableWarning
+                          className="min-h-[40px] outline-none"
+                          onBlur={(e) =>
+                            updateBlockContent(block.id, e.target.innerText)
+                          }
+                        >
+                          {block.content || "Enter text..."}
                         </div>
+                      )}
+                      {block.type === "header" && (() => {
+                        // 1. Decide which HTML tag to render based on block.level
+                        const TagName = block.level || "h2";
 
-                      </div>
-                    )}
-                    {block.type === "video" && (
-                      <div>
+                        // 2. Map the heading level to a Tailwind class
+                        //    e.g., h1 => text-4xl, h2 => text-3xl, h3 => text-xl.
+                        const headingSizeClass = (() => {
+                          if (!block.level) return "text-2xl"; // fallback if somehow still undefined
+                          switch (block.level) {
+                            case "h1":
+                              return "text-4xl";
+                            case "h2":
+                              return "text-3xl";
+                            case "h3":
+                              return "text-xl";
+                            default:
+                              return "text-2xl";
+                          }
+                        })();
+
+                        return (
+                          <TagName
+                            contentEditable
+                            suppressContentEditableWarning
+                            style={{ textAlign: block.alignment }}
+                            // Use the dynamic class instead of a fixed text size
+                            className={`font-bold ${headingSizeClass} outline-none`}
+                            onBlur={(e) => updateBlockContent(block.id, e.target.textContent)}
+                          >
+                            {block.content}
+                          </TagName>
+                        );
+                      })()}
+                      {block.type === "image" && (
                         <div>
-                          {block.content ? (
-                            <video
-                              src={block.content}
-                              controls
-                              className="max-w-full w-full rounded"
-                            />
-                          ) : (
-                            <div className="text-gray-500">No video selected</div>
-                          )}
+
+                          <div className="flex items-center justify-center">
+                            {block.content ? (
+                              <img
+                                src={block.content}
+                                alt=""
+                                className="max-w-sm rounded "
+                              />
+                            ) : (
+                              <div className="text-gray-500">No image selected</div>
+                            )}
+                          </div>
+
                         </div>
-                      </div>
-                    )}
+                      )}
+                      {block.type === "video" && (
+                        <div>
+                          <div>
+                            {block.content ? (
+                              <video
+                                src={block.content}
+                                controls
+                                className="max-w-full w-full rounded"
+                              />
+                            ) : (
+                              <div className="text-gray-500">No video selected</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
-                    {block.type === "button" && (
-                      <button
-                        className="bg-blue-600 text-white px-4 py-2 rounded"
-                        contentEditable
-                        suppressContentEditableWarning
-                        onBlur={(e) =>
-                          updateBlockContent(block.id, e.target.innerText)
-                        }
-                      >
-                        {block.content || "Button"}
-                      </button>
-                    )}
+                      {block.type === "button" && (
+                        <button
+                          className="bg-blue-600 text-white px-4 py-2 rounded"
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={(e) =>
+                            updateBlockContent(block.id, e.target.innerText)
+                          }
+                        >
+                          {block.content || "Button"}
+                        </button>
+                      )}
 
-                    {block.type === "radio" && (
-                      <div>
-                   
+                      {block.type === "radio" && (
+                        <div>
+
                           {block.content.map((option, i) => (
                             <div
                               key={i}
@@ -312,42 +521,54 @@ export default function ModalBlockEditor() {
                                 < FontAwesomeIcon icon={faTrash} />
                               </button>
                             </div>
-                            ))}
+                          ))}
                         </div>
                       )}
-                    
 
 
 
-                    {/* Move controls */}
-                    <div className="absolute top-1 right-1 flex space-x-1">
-                      <button
-                        onClick={() => moveBlockUp(index)}
-                        className="bg-gray-200 p-1 rounded text-xs"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() => moveBlockDown(index)}
-                        className="bg-gray-200 p-1 rounded text-xs"
-                      >
-                        ↓
-                      </button>
+
+                      {/* Move controls */}
+                      <div className="absolute top-1 right-1 flex space-x-1">
+                        <button
+                          onClick={() => moveBlockUp(index)}
+                          className="bg-gray-200 p-1 rounded text-xs"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          onClick={() => moveBlockDown(index)}
+                          className="bg-gray-200 p-1 rounded text-xs"
+                        >
+                          ↓
+                        </button>
+                      </div>
+
+                      {/* Plus button for adding new block */}
+                      <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-12px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                          onClick={() =>
+                            setTooltipIndex(index)
+                          }
+                          className="bg-blue-600 text-white p-1 rounded-full shadow"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {/* SETTINGS BAR (only rendered if the block is active) */}
+                      {isActive && (
+                        <div className="absolute left-0 -bottom-16 w-full bg-gray-100 border-t border-gray-300"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {renderSettingsBar(block)}
+                        </div>
+                      )}
                     </div>
 
-                    {/* Plus button for adding new block */}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-12px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <button
-                        onClick={() =>
-                          setTooltipIndex(index)
-                        }
-                        className="bg-blue-600 text-white p-1 rounded-full shadow"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
+
 
                 {/* If no blocks exist, show an Add button */}
                 {blocks.length === 0 && (

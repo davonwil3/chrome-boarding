@@ -3,6 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTextSize, faH1, faImage, faVideo, faRectangleWide, faCircleDot, faInputText, faFileLines, faTrash } from '@fortawesome/pro-regular-svg-icons';
 import { faHeading, faAlignCenter, faAlignRight, faAlignLeft, faCaretDown } from '@fortawesome/pro-regular-svg-icons';
 import { SketchPicker } from "react-color";
+import { useOutsideClick } from "./useOutsideClick";
+import FontFamilyPicker from "./Fontfamilypicker";
 
 
 
@@ -18,6 +20,7 @@ export default function ModalBlockEditor() {
 
   // For showing color picker
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const pickerRef = useRef(null);
 
   const [showHeadingDropdown, setShowHeadingDropdown] = useState(false);
   const [showAlignmentDropdown, setShowAlignmentDropdown] = useState(false);
@@ -28,6 +31,12 @@ export default function ModalBlockEditor() {
 
   // Use a ref to store a unique id counter.
   const idCounterRef = useRef(1);
+
+  // Close the color picker when clicking outside
+  // Use the hook to close the color picker when clicking outside the popup
+  useOutsideClick(pickerRef, () => {
+    setShowColorPicker(false);
+  });
 
   // Inserts a new block after the given index.
   const addBlock = (index, type) => {
@@ -157,7 +166,7 @@ export default function ModalBlockEditor() {
     setActiveBlockId((prevId) => (prevId === blockId ? null : blockId));
   };
 
-  function renderSettingsBar(block) {
+  function renderSettingsBar(block, index) {
     switch (block.type) {
       case "text":
         return (
@@ -170,7 +179,7 @@ export default function ModalBlockEditor() {
         );
       case "header":
         return (
-          <HeaderSettings block={block} />
+          <HeaderSettings block={block} index={index} />
         );
       case "image":
         return (
@@ -260,457 +269,468 @@ export default function ModalBlockEditor() {
     );
   };
 
-    // Render the settings bar for a header block
-    const HeaderSettings = ({ block }) => {
+  // Update the font family
+  const updateFontFamily = (blockId, fontFamily) => {
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((block) =>
+        block.id === blockId ? { ...block, fontFamily } : block
+      )
+    );
+  };
 
-      return (
-        <div className="p-4 bg-white shadow-md rounded flex  items-center space-x-4">
-          {/* Heading Level Dropdown */}
-          <div className="relative">
-            <button
-              onClick={(e) => {
-
-                setShowHeadingDropdown(!showHeadingDropdown);
-              }}
-              className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
-            >
-              <FontAwesomeIcon icon={faHeading} />
-
-              <FontAwesomeIcon icon={faCaretDown} />
-            </button>
-            {showHeadingDropdown && (
-              <div className="absolute z-10 mt-2 w-28 bg-white border border-gray-300 rounded shadow-md">
-                <button
-                  className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-                  onClick={(e) => {
-
-                    handleHeadingSelect(block, "h1");
-                  }}
-                >
-
-                  <span>H1</span>
-                </button>
-                <button
-                  className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-                  onClick={(e) => {
-
-                    handleHeadingSelect(block, "h2");
-                  }}
-                >
-
-                  <span>H2</span>
-                </button>
-                <button
-                  className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-                  onClick={(e) => {
-
-                    handleHeadingSelect(block, "h3");
-                  }}
-                >
-
-                  <span>H3</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Bold Icon */}
-          <button
-            onClick={() => {
-              updateBold(block.id);
-            }}
-            className="text-gray-500 border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
-          >
-            <span>B</span>
-          </button>
-
-          {/* Italic Icon */}
-          <button
-            onClick={() => {
-              updateItalic(block.id);
-            }}
-            className="text-gray-500 border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
-          >
-            <span 
-            stlye ={{fontStyle: 'italic'}}
-            >I</span>
-          </button>
-
-           {/* underline icon */}
-           <button
-            onClick={() => {
-              updateUnderline(block.id);
-            }}
-            className="text-gray-500  ml-auto border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
-          >
-            <span style={{ textDecoration: block.isUnderlined ? 'underline' : 'none' }}>U</span>
-          </button>
-
-          {/* Alignment Dropdown */}
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowAlignmentDropdown(!showAlignmentDropdown);
-              }}
-              className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
-            >
-              {block.alignment === "center" && (
-                <FontAwesomeIcon icon={faAlignCenter} />
-              )}
-              {block.alignment === "right" && (
-                <FontAwesomeIcon icon={faAlignRight} />
-              )}
-              {(!block.alignment || block.alignment === "left") && (
-                <FontAwesomeIcon icon={faAlignLeft} />
-              )}
-              <FontAwesomeIcon icon={faCaretDown} />
-            </button>
-            {showAlignmentDropdown && (
-              <div className="absolute z-10 mt-2 w-28 bg-white border border-gray-300 rounded shadow-md">
-                <button
-                  className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAlignmentSelect(block, "left");
-                  }}
-                >
-                  <FontAwesomeIcon icon={faAlignLeft} className="mr-2" />
-                  <span>Left</span>
-                </button>
-                <button
-                  className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAlignmentSelect(block, "center");
-                  }}
-                >
-                  <FontAwesomeIcon icon={faAlignCenter} className="mr-2" />
-                  <span>Center</span>
-                </button>
-                <button
-                  className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAlignmentSelect(block, "right");
-                  }}
-                >
-                  <FontAwesomeIcon icon={faAlignRight} className="mr-2" />
-                  <span>Right</span>
-                </button>
-              </div>
-
-            )}
-          </div>
-          {/* Text Color Picker */}
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowColorPicker(!showColorPicker);
-              }}
-              className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
-            >
-              <div
-                style={{
-                  backgroundColor: block.color || "#000000",
-                  width: "20px",
-                  height: "20px",
-                  borderRadius: "4px",
-                  border: "1px solid #ccc",
-                }}
-              ></div>
-              <span>Text Color</span>
-              <FontAwesomeIcon icon={faCaretDown} />
-            </button>
-            {showColorPicker && (
-              <div className="absolute z-20 mt-2">
-                <SketchPicker
-                  color={block.color || "#000000"}
-                  onChangeComplete={(color) => {
-                    updateTextColor(block.id, color.hex);
-                  }}
-                />
-              </div>
-            )}
-          </div>
-
-         
-
-          {/* Trash Icon */}
-          <button
-            onClick={() => {
-              setBlocks((prevBlocks) =>
-                prevBlocks.filter((b) => b.id !== block.id)
-              );
-            }}
-            className="text-red-500 hover:text-red-700 ml-auto"
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </button>
-
-
-
-
-        </div>
-      );
-    };
-
-
+  // Render the settings bar for a header block
+  const HeaderSettings = ({ block, index }) => {
 
     return (
-      <div className="p-4">
+      <div className="p-4 bg-white   flex  items-center space-x-4 relative z-60">
+        {/* Heading Level Dropdown */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+
+              setShowHeadingDropdown(!showHeadingDropdown);
+            }}
+            className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+          >
+            <FontAwesomeIcon icon={faHeading} />
+
+            <FontAwesomeIcon icon={faCaretDown} />
+          </button>
+          {showHeadingDropdown && (
+            <div className="absolute z-10 mt-2 w-28 bg-white border border-gray-300 rounded shadow-md">
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+
+                  handleHeadingSelect(block, "h1");
+                }}
+              >
+
+                <span>H1</span>
+              </button>
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+
+                  handleHeadingSelect(block, "h2");
+                }}
+              >
+
+                <span>H2</span>
+              </button>
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+
+                  handleHeadingSelect(block, "h3");
+                }}
+              >
+
+                <span>H3</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Bold Icon */}
         <button
-          onClick={() => setShowModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          onClick={() => {
+            updateBold(block.id);
+          }}
+          className="text-gray-500 border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
         >
-          Open Block Editor
+          <span>B</span>
         </button>
-        {/* Hidden file input */}
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files[0];
-            if (file && currentImageBlockId) {
-              handleFileChange(currentImageBlockId, file);
-              setCurrentImageBlockId(null);
-              e.target.value = ""; // Reset file input
-            }
-          }}
-        />
-        {/* hidden file input for video */}
-        <input
-          type="file"
-          accept="video/*"
-          ref={videoInputRef}
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files[0];
-            if (file && currentVideoBlockId) {
-              handleFileChange(currentVideoBlockId, file);
-              setCurrentVideoBlockId(null);
-              e.target.value = ""; // Reset file input
-            }
-          }}
-        />
 
-        {showModal && (
-          <div className="fixed inset-0 flex justify-center items-center z-50">
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-              <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
-                {/* Close Button */}
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
-                >
-                  ✖
-                </button>
-                <div className="">
-                  {blocks.map((block, index) => {
+        {/* Italic Icon */}
+        <button
+          onClick={() => {
+            updateItalic(block.id);
+          }}
+          className="text-gray-500 border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+        >
+          <span
+            stlye={{ fontStyle: 'italic' }}
+          >I</span>
+        </button>
 
-                    const isActive = block.id === activeBlockId;
-                    return (
-                      <div
-                        key={block.id}
-                        className="relative group p-4 border border-transparent hover:border-blue-600"
-                        onClick={() => handleBlockClick(block.id)}
-                      >
-                        {/* Editable content */}
-                        {block.type === "text" && (
-                          <div
+        {/* underline icon */}
+        <button
+          onClick={() => {
+            updateUnderline(block.id);
+          }}
+          className="text-gray-500  ml-auto border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+        >
+          <span style={{ textDecoration: block.isUnderlined ? 'underline' : 'none' }}>U</span>
+        </button>
+
+        {/* Alignment Dropdown */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAlignmentDropdown(!showAlignmentDropdown);
+            }}
+            className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+          >
+            {block.alignment === "center" && (
+              <FontAwesomeIcon icon={faAlignCenter} />
+            )}
+            {block.alignment === "right" && (
+              <FontAwesomeIcon icon={faAlignRight} />
+            )}
+            {(!block.alignment || block.alignment === "left") && (
+              <FontAwesomeIcon icon={faAlignLeft} />
+            )}
+            <FontAwesomeIcon icon={faCaretDown} />
+          </button>
+          {showAlignmentDropdown && (
+            <div className="absolute z-10 mt-2 w-28 bg-white border border-gray-300 rounded shadow-md">
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAlignmentSelect(block, "left");
+                }}
+              >
+                <FontAwesomeIcon icon={faAlignLeft} className="mr-2" />
+                <span>Left</span>
+              </button>
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAlignmentSelect(block, "center");
+                }}
+              >
+                <FontAwesomeIcon icon={faAlignCenter} className="mr-2" />
+                <span>Center</span>
+              </button>
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAlignmentSelect(block, "right");
+                }}
+              >
+                <FontAwesomeIcon icon={faAlignRight} className="mr-2" />
+                <span>Right</span>
+              </button>
+            </div>
+
+          )}
+        </div>
+        {/* Text Color Picker */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+           
+              setShowColorPicker(!showColorPicker);
+            }}
+            className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+          >
+            <div
+              style={{
+                backgroundColor: block.color || "#000000",
+                width: "20px",
+                height: "20px",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+              }}
+            ></div>
+            <span>Text Color</span>
+            <FontAwesomeIcon icon={faCaretDown} />
+          </button>
+          {showColorPicker && (
+            <div className="absolute z-20 mt-2" ref={pickerRef}>
+              <SketchPicker
+                color={block.color || "#000000"}
+                onChangeComplete={(color) => {
+                  updateTextColor(block.id, color.hex);
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* font family */}
+
+        <div className="relative">
+          <FontFamilyPicker
+            block={block}
+            updateFontFamily={updateFontFamily}
+          />
+        </div>
+
+
+        {/* Move Controls */}
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={() => moveBlockUp(index)}
+            className="bg-gray-200 p-1 rounded text-xs"
+          >
+            ↑
+          </button>
+          <button
+            onClick={() => moveBlockDown(index)}
+            className="bg-gray-200 p-1 rounded text-xs"
+          >
+            ↓
+          </button>
+        </div>
+
+        {/* Trash Icon */}
+        <button
+          onClick={() => {
+            setBlocks((prevBlocks) =>
+              prevBlocks.filter((b) => b.id !== block.id)
+            );
+          }}
+          className="text-red-500 hover:text-red-700 ml-auto"
+        >
+          <FontAwesomeIcon icon={faTrash} />
+        </button>
+      </div>
+    );
+  };
+
+
+
+  return (
+    <div className="p-4">
+      <button
+        onClick={() => setShowModal(true)}
+        className="bg-blue-600 text-white px-4 py-2 rounded"
+      >
+        Open Block Editor
+      </button>
+      {/* Hidden file input */}
+      <input
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (file && currentImageBlockId) {
+            handleFileChange(currentImageBlockId, file);
+            setCurrentImageBlockId(null);
+            e.target.value = ""; // Reset file input
+          }
+        }}
+      />
+      {/* hidden file input for video */}
+      <input
+        type="file"
+        accept="video/*"
+        ref={videoInputRef}
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (file && currentVideoBlockId) {
+            handleFileChange(currentVideoBlockId, file);
+            setCurrentVideoBlockId(null);
+            e.target.value = ""; // Reset file input
+          }
+        }}
+      />
+
+      {showModal && (
+        <div className="fixed inset-0 flex justify-center items-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowModal(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+              >
+                ✖
+              </button>
+              <div className="">
+                {blocks.map((block, index) => {
+
+                  const isActive = block.id === activeBlockId;
+                  return (
+                    <div
+                      key={block.id}
+                      className="relative group p-4 border border-transparent hover:border-blue-600"
+                      onClick={() => handleBlockClick(block.id)}
+                    >
+                      {/* Editable content */}
+                      {block.type === "text" && (
+                        <div
+                          contentEditable
+                          suppressContentEditableWarning
+                          className="min-h-[40px] outline-none"
+                          onBlur={(e) =>
+                            updateBlockContent(block.id, e.target.innerText)
+                          }
+                        >
+                          {block.content || "Enter text..."}
+                        </div>
+                      )}
+                      {block.type === "header" && (() => {
+                        // 1. Decide which HTML tag to render based on block.level
+                        const TagName = block.level || "h2";
+
+                        // 2. Map the heading level to a Tailwind class
+                        //    e.g., h1 => text-4xl, h2 => text-3xl, h3 => text-xl.
+                        const headingSizeClass = (() => {
+                          if (!block.level) return "text-2xl"; // fallback if somehow still undefined
+                          switch (block.level) {
+                            case "h1":
+                              return "text-4xl";
+                            case "h2":
+                              return "text-3xl";
+                            case "h3":
+                              return "text-xl";
+                            default:
+                              return "text-2xl";
+                          }
+                        })();
+
+                        return (
+                          <TagName
                             contentEditable
                             suppressContentEditableWarning
-                            className="min-h-[40px] outline-none"
-                            onBlur={(e) =>
-                              updateBlockContent(block.id, e.target.innerText)
-                            }
+                            style={{ textAlign: block.alignment, color: block.color, textDecoration: block.isUnderlined ? 'underline' : 'none', fontWeight: block.isBold ? 'bold' : 'normal', fontStyle: block.isItalic ? 'italic' : 'normal' , fontFamily: block.fontFamily}}
+                            // Use the dynamic class instead of a fixed text size
+                            className={`font-bold ${headingSizeClass} outline-none`}
+                            onBlur={(e) => updateBlockContent(block.id, e.target.textContent)}
                           >
-                            {block.content || "Enter text..."}
+                            {block.content}
+                          </TagName>
+                        );
+                      })()}
+                      {block.type === "image" && (
+                        <div>
+
+                          <div className="flex items-center justify-center">
+                            {block.content ? (
+                              <img
+                                src={block.content}
+                                alt=""
+                                className="max-w-sm rounded "
+                              />
+                            ) : (
+                              <div className="text-gray-500">No image selected</div>
+                            )}
                           </div>
-                        )}
-                        {block.type === "header" && (() => {
-                          // 1. Decide which HTML tag to render based on block.level
-                          const TagName = block.level || "h2";
 
-                          // 2. Map the heading level to a Tailwind class
-                          //    e.g., h1 => text-4xl, h2 => text-3xl, h3 => text-xl.
-                          const headingSizeClass = (() => {
-                            if (!block.level) return "text-2xl"; // fallback if somehow still undefined
-                            switch (block.level) {
-                              case "h1":
-                                return "text-4xl";
-                              case "h2":
-                                return "text-3xl";
-                              case "h3":
-                                return "text-xl";
-                              default:
-                                return "text-2xl";
-                            }
-                          })();
+                        </div>
+                      )}
+                      {block.type === "video" && (
+                        <div>
+                          <div>
+                            {block.content ? (
+                              <video
+                                src={block.content}
+                                controls
+                                className="max-w-full w-full rounded"
+                              />
+                            ) : (
+                              <div className="text-gray-500">No video selected</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
-                          return (
-                            <TagName
-                              contentEditable
-                              suppressContentEditableWarning
-                              style={{ textAlign: block.alignment, color: block.color, textDecoration: block.isUnderlined ? 'underline' : 'none', fontWeight: block.isBold ? 'bold' : 'normal', fontStyle: block.isItalic ? 'italic' : 'normal' }}
-                              // Use the dynamic class instead of a fixed text size
-                              className={`font-bold ${headingSizeClass} outline-none`}
-                              onBlur={(e) => updateBlockContent(block.id, e.target.textContent)}
+                      {block.type === "button" && (
+                        <button
+                          className="bg-blue-600 text-white px-4 py-2 rounded"
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={(e) =>
+                            updateBlockContent(block.id, e.target.innerText)
+                          }
+                        >
+                          {block.content || "Button"}
+                        </button>
+                      )}
+
+                      {block.type === "radio" && (
+                        <div>
+
+                          {block.content.map((option, i) => (
+                            <div
+                              key={i}
+                              className="group relative flex items-center space-x-2 mb-2"
                             >
-                              {block.content}
-                            </TagName>
-                          );
-                        })()}
-                        {block.type === "image" && (
-                          <div>
-
-                            <div className="flex items-center justify-center">
-                              {block.content ? (
-                                <img
-                                  src={block.content}
-                                  alt=""
-                                  className="max-w-sm rounded "
-                                />
-                              ) : (
-                                <div className="text-gray-500">No image selected</div>
-                              )}
-                            </div>
-
-                          </div>
-                        )}
-                        {block.type === "video" && (
-                          <div>
-                            <div>
-                              {block.content ? (
-                                <video
-                                  src={block.content}
-                                  controls
-                                  className="max-w-full w-full rounded"
-                                />
-                              ) : (
-                                <div className="text-gray-500">No video selected</div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {block.type === "button" && (
-                          <button
-                            className="bg-blue-600 text-white px-4 py-2 rounded"
-                            contentEditable
-                            suppressContentEditableWarning
-                            onBlur={(e) =>
-                              updateBlockContent(block.id, e.target.innerText)
-                            }
-                          >
-                            {block.content || "Button"}
-                          </button>
-                        )}
-
-                        {block.type === "radio" && (
-                          <div>
-
-                            {block.content.map((option, i) => (
-                              <div
-                                key={i}
-                                className="group relative flex items-center space-x-2 mb-2"
+                              <input
+                                type="radio"
+                                name={`radio-${block.id}`}
+                                id={`radio-${block.id}-${i}`}
+                                className="mr-2"
+                              />
+                              <span
+                                contentEditable
+                                suppressContentEditableWarning
+                                onBlur={(e) => {
+                                  // If text isn't empty, update the option's text.
+                                  const newText = e.currentTarget.textContent.trim();
+                                  if (newText !== "") {
+                                    updateRadioOption(block.id, i, newText);
+                                  }
+                                }}
+                                className=" p-1 rounded w-full"
                               >
-                                <input
-                                  type="radio"
-                                  name={`radio-${block.id}`}
-                                  id={`radio-${block.id}-${i}`}
-                                  className="mr-2"
-                                />
-                                <span
-                                  contentEditable
-                                  suppressContentEditableWarning
-                                  onBlur={(e) => {
-                                    // If text isn't empty, update the option's text.
-                                    const newText = e.currentTarget.textContent.trim();
-                                    if (newText !== "") {
-                                      updateRadioOption(block.id, i, newText);
-                                    }
-                                  }}
-                                  className=" p-1 rounded w-full"
-                                >
-                                  {option}
-                                </span>
+                                {option}
+                              </span>
 
-                                {/* Trash icon (appears on hover) */}
-                                <button
-                                  type="button"
-                                  onClick={() => removeRadioOption(block.id, i)}
-                                  className="absolute right-0 mr-2 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 z-10"
-                                >
-                                  < FontAwesomeIcon icon={faTrash} />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-
-
-
-                        {/* Move controls */}
-                        <div className="absolute top-1 right-1 flex space-x-1">
-                          <button
-                            onClick={() => moveBlockUp(index)}
-                            className="bg-gray-200 p-1 rounded text-xs"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            onClick={() => moveBlockDown(index)}
-                            className="bg-gray-200 p-1 rounded text-xs"
-                          >
-                            ↓
-                          </button>
+                              {/* Trash icon (appears on hover) */}
+                              <button
+                                type="button"
+                                onClick={() => removeRadioOption(block.id, i)}
+                                className="absolute right-0 mr-2 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 z-10"
+                              >
+                                < FontAwesomeIcon icon={faTrash} />
+                              </button>
+                            </div>
+                          ))}
                         </div>
+                      )}
 
-                        {/* Plus button for adding new block */}
-                        <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-12px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          <button
-                            onClick={() =>
-                              setTooltipIndex(index)
-                            }
-                            className="bg-blue-600 text-white p-1 rounded-full shadow"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        {/* SETTINGS BAR (only rendered if the block is active) */}
-                        {isActive && (
-                          <div className="absolute left-0 -bottom-16 w-full bg-gray-100 border-t border-gray-300"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {renderSettingsBar(block)}
-                          </div>
-                        )}
+                      {/* Plus button for adding new block */}
+                      <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-12px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                          onClick={() =>
+                            setTooltipIndex(index)
+                          }
+                          className="bg-blue-600 text-white p-1 rounded-full shadow"
+                        >
+                          +
+                        </button>
                       </div>
 
-                    )
-                  })}
-
-
-                  {/* If no blocks exist, show an Add button */}
-                  {blocks.length === 0 && (
-                    <div className="text-center">
-                      <button
-                        onClick={() => addBlock(-1, "text")}
-                        className="bg-blue-600 text-white px-4 py-2 rounded"
-                      >
-                        Add a Block
-                      </button>
+                      {/* Settings bar */}
+                      {isActive && (
+                        <div
+                          className="absolute left-0 -bottom-16 w-[730px] bg-white border border-gray-300 z-50 flex items-center justify-between  rounded"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {renderSettingsBar(block, index)}
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {/* Tooltip with block options */}
-                  {tooltipIndex !== null && (
-                    <div className="
+
+                  )
+                })}
+
+
+                {/* If no blocks exist, show an Add button */}
+                {blocks.length === 0 && (
+                  <div className="text-center">
+                    <button
+                      onClick={() => addBlock(-1, "text")}
+                      className="bg-blue-600 text-white px-4 py-2 rounded"
+                    >
+                      Add a Block
+                    </button>
+                  </div>
+                )}
+                {/* Tooltip with block options */}
+                {tooltipIndex !== null && (
+                  <div className="
                     fixed
                     top-1/2
                     left-1/2
@@ -724,89 +744,89 @@ export default function ModalBlockEditor() {
                     shadow-md
                     z-10
                   ">
-                      <div className="flex flex-col w-[400px] space-y-4">
-                        {/* close button */}
+                    <div className="flex flex-col w-[400px] space-y-4">
+                      {/* close button */}
+                      <button
+                        onClick={() => setTooltipIndex(null)}
+                        className="absolute top-1 right-1 text-gray-500 hover:text-gray-800"
+                      >
+                        ✖
+                      </button>
+                      <h2 className="font-bold text-lg">
+                        Add an element
+                      </h2>
+                      <p className="text-gray-500">
+                        Elements are the building blocks of your guide. Add an element to get started.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 mt-2 bg-gray-100 p-4">
                         <button
-                          onClick={() => setTooltipIndex(null)}
-                          className="absolute top-1 right-1 text-gray-500 hover:text-gray-800"
+                          onClick={() => addBlock(tooltipIndex, "text")}
+                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                         >
-                          ✖
+                          <FontAwesomeIcon icon={faTextSize} className="mb-1" size="xl" />
+                          <span>Text</span>
                         </button>
-                        <h2 className="font-bold text-lg">
-                          Add an element
-                        </h2>
-                        <p className="text-gray-500">
-                          Elements are the building blocks of your guide. Add an element to get started.
-                        </p>
-                        <div className="grid grid-cols-2 gap-2 mt-2 bg-gray-100 p-4">
-                          <button
-                            onClick={() => addBlock(tooltipIndex, "text")}
-                            className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                          >
-                            <FontAwesomeIcon icon={faTextSize} className="mb-1" size="xl" />
-                            <span>Text</span>
-                          </button>
-                          <button
-                            onClick={() => addBlock(tooltipIndex, "header")}
-                            className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                          >
-                            <FontAwesomeIcon icon={faH1} className="mb-1" size="xl" />
-                            <span>Header</span>
-                          </button>
-                          <button
-                            onClick={() => handleAddImageBlock(tooltipIndex)}
-                            className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                          >
-                            <FontAwesomeIcon icon={faImage} className="mb-1" size="xl" />
-                            <span>Image</span>
-                          </button>
-                          <button
-                            onClick={() => handleAddVideoBlock(tooltipIndex)}
-                            className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                          >
-                            <FontAwesomeIcon icon={faVideo} className="mb-1" size="xl" />
-                            <span>Video</span>
-                          </button>
-                          <button
-                            onClick={() => addBlock(tooltipIndex, "button")}
-                            className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                          >
-                            <FontAwesomeIcon icon={faRectangleWide} className="mb-1" size="xl" />
-                            <span>Button</span>
-                          </button>
-                          <button
-                            onClick={() => addBlock(tooltipIndex, "radio")}
-                            className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                          >
-                            <FontAwesomeIcon icon={faCircleDot} className="mb-1" size="xl" />
-                            <span>Radio</span>
-                          </button>
-                          <button
-                            onClick={() => addBlock(tooltipIndex, "smallinput")}
-                            className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                          >
-                            <FontAwesomeIcon icon={faInputText} className="mb-1" size="xl" />
-                            <span>Small Input</span>
-                          </button>
-                          <button
-                            onClick={() => addBlock(tooltipIndex, "largeinput")}
-                            className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                          >
-                            <FontAwesomeIcon icon={faFileLines} className="mb-1" size="xl" />
-                            <span>Large Input</span>
-                          </button>
+                        <button
+                          onClick={() => addBlock(tooltipIndex, "header")}
+                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                        >
+                          <FontAwesomeIcon icon={faH1} className="mb-1" size="xl" />
+                          <span>Header</span>
+                        </button>
+                        <button
+                          onClick={() => handleAddImageBlock(tooltipIndex)}
+                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                        >
+                          <FontAwesomeIcon icon={faImage} className="mb-1" size="xl" />
+                          <span>Image</span>
+                        </button>
+                        <button
+                          onClick={() => handleAddVideoBlock(tooltipIndex)}
+                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                        >
+                          <FontAwesomeIcon icon={faVideo} className="mb-1" size="xl" />
+                          <span>Video</span>
+                        </button>
+                        <button
+                          onClick={() => addBlock(tooltipIndex, "button")}
+                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                        >
+                          <FontAwesomeIcon icon={faRectangleWide} className="mb-1" size="xl" />
+                          <span>Button</span>
+                        </button>
+                        <button
+                          onClick={() => addBlock(tooltipIndex, "radio")}
+                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                        >
+                          <FontAwesomeIcon icon={faCircleDot} className="mb-1" size="xl" />
+                          <span>Radio</span>
+                        </button>
+                        <button
+                          onClick={() => addBlock(tooltipIndex, "smallinput")}
+                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                        >
+                          <FontAwesomeIcon icon={faInputText} className="mb-1" size="xl" />
+                          <span>Small Input</span>
+                        </button>
+                        <button
+                          onClick={() => addBlock(tooltipIndex, "largeinput")}
+                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                        >
+                          <FontAwesomeIcon icon={faFileLines} className="mb-1" size="xl" />
+                          <span>Large Input</span>
+                        </button>
 
-                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-      </div>
+    </div>
 
-    );
-  };
+  );
+};

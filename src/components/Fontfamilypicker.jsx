@@ -3,13 +3,17 @@ import React from "react";
 import Select from "react-select";
 
 const fontOptions = [
-  { value: "Arial", label: "Arial" },
-  { value: "Helvetica", label: "Helvetica" },
-  { value: "Times New Roman", label: "Times New Roman" },
-  { value: "Courier New", label: "Courier New" },
-  { value: "Georgia", label: "Georgia" },
-  // Add more fonts as needed
-];
+    { value: "Arial", label: "Arial" },
+    { value: "Helvetica", label: "Helvetica" },
+    { value: "Times New Roman", label: "Times New Roman" },
+    { value: "Courier New", label: "Courier New" },
+    { value: "Georgia", label: "Georgia" },
+    { value: "Verdana", label: "Verdana" },
+    { value: "Tahoma", label: "Tahoma" },
+    { value: "Trebuchet MS", label: "Trebuchet MS" },
+    { value: "Impact", label: "Impact" }
+  ];
+  
 
 const FontFamilyPicker = ({ block, updateFontFamily }) => {
   const selectedOption =

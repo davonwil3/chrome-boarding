@@ -842,7 +842,7 @@ const Textsettings = ({ block, index }) => {
                         const TagName = block.level || "h2";
 
                         // 2. Map the heading level to a Tailwind class
-                        //    e.g., h1 => text-4xl, h2 => text-3xl, h3 => text-xl.
+                       
                         const headingSizeClass = (() => {
                           if (!block.level) return "text-2xl"; // fallback if somehow still undefined
                           switch (block.level) {

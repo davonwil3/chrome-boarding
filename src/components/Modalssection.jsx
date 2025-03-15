@@ -838,7 +838,7 @@ const Textsettings = ({ block, index }) => {
                         </div>
                       )}
                       {block.type === "header" && (() => {
-                        // 1. Decide which HTML tag to render based on block.level
+                     
                         const TagName = block.level || "h2";
 
                         // 2. Map the heading level to a Tailwind class

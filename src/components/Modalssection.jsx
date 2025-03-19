@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTextSize, faH1, faImage, faVideo, faRectangleWide, faCircleDot, faInputText, faFileLines, faTrash } from '@fortawesome/pro-regular-svg-icons';
+import { faTextSize, faH1, faImage, faVideo, faRectangleWide, faCircleDot, faInputText, faFileLines, faTrash, faGear } from '@fortawesome/pro-regular-svg-icons';
 import { faHeading, faAlignCenter, faAlignRight, faAlignLeft, faCaretDown } from '@fortawesome/pro-regular-svg-icons';
 import { SketchPicker } from "react-color";
 import { useOutsideClick } from "./useOutsideClick";
 import FontFamilyPicker from "./Fontfamilypicker";
+import FontSizePicker from "./FontSizepicker";
 
 
 
@@ -275,9 +276,18 @@ export default function ModalBlockEditor() {
     );
   };
 
+  // Update the font size
+  const updateFontSize = (blockId, fontSize) => {
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((block) => {
+        if (block.id === blockId) { return { ...block, fontSize }; } else { return block; }
+      })
+    );
+  };
+
   const alignmentRef = useRef(null);
   const headingRef = useRef(null);
- 
+
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -288,7 +298,7 @@ export default function ModalBlockEditor() {
       if (headingRef.current && !headingRef.current.contains(event.target)) {
         setShowHeadingDropdown(false);
       }
-     
+
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -312,11 +322,14 @@ export default function ModalBlockEditor() {
     };
   }, [setActiveBlockId]);
 
+
+
+
   // Render the settings bar for a header block
   const HeaderSettings = ({ block, index }) => {
 
     return (
-      <div className=" py-4 px-4 bg-white   flex  items-center space-x-4 relative z-60">
+      <div className=" py-4 px-4 bg-white   flex  items-center space-x-4 relative z-60" onClick={(e) => e.stopPropagation()} >
         {/* Heading Level Dropdown */}
         <div className="relative" ref={headingRef}>
           <button
@@ -458,7 +471,7 @@ export default function ModalBlockEditor() {
         <div className="relative">
           <button
             onClick={(e) => {
-           
+
               setShowColorPicker(!showColorPicker);
             }}
             className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
@@ -472,7 +485,7 @@ export default function ModalBlockEditor() {
                 border: "1px solid #ccc",
               }}
             ></div>
-            <span>Text Color</span>
+            <span>Color</span>
             <FontAwesomeIcon icon={faCaretDown} />
           </button>
           {showColorPicker && (
@@ -537,230 +550,189 @@ export default function ModalBlockEditor() {
   };
 
 
-// Render text settings bar
+  // Render text settings bar
 
-const Textsettings = ({ block, index }) => {
+  const Textsettings = ({ block, index }) => {
 
-  return (
-    <div className=" py-4 px-4 bg-white   flex  items-center space-x-4 relative z-60">
-      {/* Heading Level Dropdown */}
-      <div className="relative" ref={headingRef}>
+    return (
+      <div className=" py-4 px-4 bg-white   flex  items-center space-x-4 relative z-60"  >
+        {/* Font Size Dropdown */}
+        <div className="relative">
+          <FontSizePicker
+            block={block}
+            updateFontSize={updateFontSize}
+          />
+        </div>
+        {/* Bold Icon */}
         <button
           onClick={(e) => {
-
-            setShowHeadingDropdown(!showHeadingDropdown);
-          }}
-          className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
-        >
-          <FontAwesomeIcon icon={faHeading} />
-
-          <FontAwesomeIcon icon={faCaretDown} />
-        </button>
-        {showHeadingDropdown && (
-          <div className="absolute z-10 mt-2 w-28 bg-white border border-gray-300 rounded shadow-md">
-            <button
-              className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-              onClick={(e) => {
-
-                handleHeadingSelect(block, "h1");
-              }}
-            >
-
-              <span>H1</span>
-            </button>
-            <button
-              className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-              onClick={(e) => {
-
-                handleHeadingSelect(block, "h2");
-              }}
-            >
-
-              <span>H2</span>
-            </button>
-            <button
-              className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-              onClick={(e) => {
-
-                handleHeadingSelect(block, "h3");
-              }}
-            >
-
-              <span>H3</span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Bold Icon */}
-      <button
-        onClick={() => {
-          updateBold(block.id);
-        }}
-        className="text-gray-500 border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
-      >
-        <span>B</span>
-      </button>
-
-      {/* Italic Icon */}
-      <button
-        onClick={() => {
-          updateItalic(block.id);
-        }}
-        className="text-gray-500 border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
-      >
-        <span
-          stlye={{ fontStyle: 'italic' }}
-        >I</span>
-      </button>
-
-      {/* underline icon */}
-      <button
-        onClick={() => {
-          updateUnderline(block.id);
-        }}
-        className="text-gray-500  ml-auto border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
-      >
-        <span style={{ textDecoration: block.isUnderlined ? 'underline' : 'none' }}>U</span>
-      </button>
-
-      {/* Alignment Dropdown */}
-      <div className="relative" ref={alignmentRef}>
-        <button
-          onClick={(e) => {
+            updateBold(block.id);
             e.stopPropagation();
-            setShowAlignmentDropdown(!showAlignmentDropdown);
           }}
-          className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+          className="text-gray-500 border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
         >
-          {block.alignment === "center" && (
-            <FontAwesomeIcon icon={faAlignCenter} />
-          )}
-          {block.alignment === "right" && (
-            <FontAwesomeIcon icon={faAlignRight} />
-          )}
-          {(!block.alignment || block.alignment === "left") && (
-            <FontAwesomeIcon icon={faAlignLeft} />
-          )}
-          <FontAwesomeIcon icon={faCaretDown} />
+          <span>B</span>
         </button>
-        {showAlignmentDropdown && (
-          <div className="absolute z-10 mt-2 w-28 bg-white border border-gray-300 rounded shadow-md">
-            <button
-              className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAlignmentSelect(block, "left");
-              }}
-            >
-              <FontAwesomeIcon icon={faAlignLeft} className="mr-2" />
-              <span>Left</span>
-            </button>
-            <button
-              className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAlignmentSelect(block, "center");
-              }}
-            >
-              <FontAwesomeIcon icon={faAlignCenter} className="mr-2" />
-              <span>Center</span>
-            </button>
-            <button
-              className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAlignmentSelect(block, "right");
-              }}
-            >
-              <FontAwesomeIcon icon={faAlignRight} className="mr-2" />
-              <span>Right</span>
-            </button>
-          </div>
 
-        )}
-      </div>
-      {/* Text Color Picker */}
-      <div className="relative">
+        {/* Italic Icon */}
         <button
-          onClick={(e) => {
-         
-            setShowColorPicker(!showColorPicker);
+          onClick={() => {
+            updateItalic(block.id);
           }}
-          className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+          className="text-gray-500 border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
         >
-          <div
-            style={{
-              backgroundColor: block.color || "#000000",
-              width: "20px",
-              height: "20px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
+          <span
+            stlye={{ fontStyle: 'italic' }}
+          >I</span>
+        </button>
+
+        {/* underline icon */}
+        <button
+          onClick={() => {
+            updateUnderline(block.id);
+          }}
+          className="text-gray-500  ml-auto border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+        >
+          <span style={{ textDecoration: block.isUnderlined ? 'underline' : 'none' }}>U</span>
+        </button>
+
+        {/* Alignment Dropdown */}
+        <div className="relative" ref={alignmentRef}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAlignmentDropdown(!showAlignmentDropdown);
             }}
-          ></div>
-          <span>Text Color</span>
-          <FontAwesomeIcon icon={faCaretDown} />
-        </button>
-        {showColorPicker && (
-          <div className="absolute z-20 mt-2" ref={pickerRef}>
-            <SketchPicker
-              color={block.color || "#000000"}
-              onChangeComplete={(color) => {
-                updateTextColor(block.id, color.hex);
+            className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+          >
+            {block.alignment === "center" && (
+              <FontAwesomeIcon icon={faAlignCenter} />
+            )}
+            {block.alignment === "right" && (
+              <FontAwesomeIcon icon={faAlignRight} />
+            )}
+            {(!block.alignment || block.alignment === "left") && (
+              <FontAwesomeIcon icon={faAlignLeft} />
+            )}
+            <FontAwesomeIcon icon={faCaretDown} />
+          </button>
+          {showAlignmentDropdown && (
+            <div className="absolute z-10 mt-2 w-28 bg-white border border-gray-300 rounded shadow-md">
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAlignmentSelect(block, "left");
+                }}
+              >
+                <FontAwesomeIcon icon={faAlignLeft} className="mr-2" />
+                <span>Left</span>
+              </button>
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAlignmentSelect(block, "center");
+                }}
+              >
+                <FontAwesomeIcon icon={faAlignCenter} className="mr-2" />
+                <span>Center</span>
+              </button>
+              <button
+                className="flex items-center w-full px-2 py-1 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAlignmentSelect(block, "right");
+                }}
+              >
+                <FontAwesomeIcon icon={faAlignRight} className="mr-2" />
+                <span>Right</span>
+              </button>
+            </div>
+
+          )}
+        </div>
+        {/* Text Color Picker */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+
+              setShowColorPicker(!showColorPicker);
+            }}
+            className="border rounded px-2 py-1 flex items-center space-x-1 hover:bg-gray-100"
+          >
+            <div
+              style={{
+                backgroundColor: block.color || "#000000",
+                width: "20px",
+                height: "20px",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
               }}
-            />
-          </div>
-        )}
-      </div>
+            ></div>
+            <span>Color</span>
+            <FontAwesomeIcon icon={faCaretDown} />
+          </button>
+          {showColorPicker && (
+            <div className="absolute z-20 mt-2" ref={pickerRef}>
+              <SketchPicker
+                color={block.color || "#000000"}
+                onChangeComplete={(color) => {
+                  updateTextColor(block.id, color.hex);
+                }}
+              />
+            </div>
+          )}
+        </div>
 
-      {/* font family */}
+        {/* font family */}
 
-      <div className="relative">
-        <FontFamilyPicker
-          block={block}
-          updateFontFamily={updateFontFamily}
-        />
-      </div>
+        <div className="relative">
+          <FontFamilyPicker
+            block={block}
+            updateFontFamily={updateFontFamily}
+          />
+        </div>
 
 
-      {/* Move Controls */}
-      <div className="flex items-center space-x-1">
+        {/* Move Controls */}
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={() => moveBlockUp(index)}
+            className="bg-gray-200 p-1 rounded text-xs"
+          >
+            ↑
+          </button>
+          <button
+            onClick={() => moveBlockDown(index)}
+            className="bg-gray-200 p-1 rounded text-xs"
+          >
+            ↓
+          </button>
+        </div>
+
+        {/* Trash Icon */}
         <button
-          onClick={() => moveBlockUp(index)}
-          className="bg-gray-200 p-1 rounded text-xs"
+          onClick={() => {
+            setBlocks((prevBlocks) =>
+              prevBlocks.filter((b) => b.id !== block.id)
+            );
+          }}
+          className="text-red-500 hover:text-red-700 ml-auto"
         >
-          ↑
+          <FontAwesomeIcon icon={faTrash} />
         </button>
+
+        {/* close button (x) */}
         <button
-          onClick={() => moveBlockDown(index)}
-          className="bg-gray-200 p-1 rounded text-xs"
+          onClick={() => setActiveBlockId(null)}
+          className="text-gray-500 hover:text-gray-800 ml-auto absolute top-0 right-0 "
         >
-          ↓
+          ✖
         </button>
       </div>
-
-      {/* Trash Icon */}
-      <button
-        onClick={() => {
-          setBlocks((prevBlocks) =>
-            prevBlocks.filter((b) => b.id !== block.id)
-          );
-        }}
-        className="text-red-500 hover:text-red-700 ml-auto"
-      >
-        <FontAwesomeIcon icon={faTrash} />
-      </button>
-
-      {/* close button (x) */}
-      <button
-        onClick={() => setActiveBlockId(null)}
-        className="text-gray-500 hover:text-gray-800 ml-auto absolute top-0 right-0 "
-      >
-        ✖
-      </button>
-    </div>
-  );
-};
+    );
+  };
 
 
   return (
@@ -817,11 +789,11 @@ const Textsettings = ({ block, index }) => {
                 {blocks.map((block, index) => {
 
                   const isActive = block.id === activeBlockId;
-                    return (
+                  return (
                     <div
                       key={block.id}
                       className="relative group p-4 border border-transparent hover:border-blue-600"
-                      onClick={() => handleBlockClick(block.id)}
+
                     >
                       {/* Editable content */}
                       {block.type === "text" && (
@@ -832,17 +804,17 @@ const Textsettings = ({ block, index }) => {
                           onBlur={(e) =>
                             updateBlockContent(block.id, e.target.innerText)
                           }
-                          style={{ textAlign: block.alignment, color: block.color , textDecoration: block.isUnderlined ? 'underline' : 'none', fontWeight: block.isBold ? 'bold' : 'normal', fontStyle: block.isItalic ? 'italic' : 'normal' , fontFamily: block.fontFamily}}
+                          style={{ textAlign: block.alignment, color: block.color, textDecoration: block.isUnderlined ? 'underline' : 'none', fontWeight: block.isBold ? 'bold' : 'normal', fontStyle: block.isItalic ? 'italic' : 'normal', fontFamily: block.fontFamily, fontSize: block.fontSize }}
                         >
                           {block.content || "Enter text..."}
                         </div>
                       )}
                       {block.type === "header" && (() => {
-                     
+
                         const TagName = block.level || "h2";
 
                         // 2. Map the heading level to a Tailwind class
-                       
+
                         const headingSizeClass = (() => {
                           if (!block.level) return "text-2xl"; // fallback if somehow still undefined
                           switch (block.level) {
@@ -861,7 +833,7 @@ const Textsettings = ({ block, index }) => {
                           <TagName
                             contentEditable
                             suppressContentEditableWarning
-                            style={{ textAlign: block.alignment, color: block.color, textDecoration: block.isUnderlined ? 'underline' : 'none', fontWeight: block.isBold ? 'bold' : 'normal', fontStyle: block.isItalic ? 'italic' : 'normal' , fontFamily: block.fontFamily}}
+                            style={{ textAlign: block.alignment, color: block.color, textDecoration: block.isUnderlined ? 'underline' : 'none', fontWeight: block.isBold ? 'bold' : 'normal', fontStyle: block.isItalic ? 'italic' : 'normal', fontFamily: block.fontFamily }}
                             // Use the dynamic class instead of a fixed text size
                             className={`font-bold ${headingSizeClass} outline-none`}
                             onBlur={(e) => updateBlockContent(block.id, e.target.textContent)}
@@ -958,6 +930,21 @@ const Textsettings = ({ block, index }) => {
                         </div>
                       )}
 
+                      {/* Gear Icon (hidden by default, appears on hover) */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBlockClick(block.id);
+                        }}
+                        className="absolute top-1 right-1 text-gray-500 hover:text-gray-800
+               opacity-0 group-hover:opacity-100
+               bg-transparent border-none shadow-none p-0 cursor-pointer
+               transition-opacity duration-200"
+                      >
+                        <FontAwesomeIcon icon={faGear} />
+                      </button>
+
+
                       {/* Plus button for adding new block with stoppropagation */}
                       <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-12px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
@@ -965,7 +952,7 @@ const Textsettings = ({ block, index }) => {
                             setTooltipIndex(index);
                             e.stopPropagation();
                           }}
-                          
+
                           className="bg-blue-600 text-white p-1 rounded-full shadow"
                         >
                           +
@@ -975,7 +962,7 @@ const Textsettings = ({ block, index }) => {
                       {/* Settings bar */}
                       {isActive && (
                         <div
-                          className="absolute left-0 -bottom-16 w-[730px] bg-white border border-gray-300 z-50 flex items-center justify-between  rounded mt-8"
+                          className="absolute left-0 -bottom-16 w-[730px] bg-white border border-gray-300 z-[9999] flex items-center justify-between  rounded mt-8"
                           onClick={(e) => e.stopPropagation()}
                           ref={settingsRef}
                         >

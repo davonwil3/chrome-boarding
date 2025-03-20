@@ -945,7 +945,7 @@ export default function ModalBlockEditor() {
                       </button>
 
 
-                      {/* Plus button for adding new block with stoppropagation */}
+                      {/* Plus button  */}
                       <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-12px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
                           onClick={(e) => {

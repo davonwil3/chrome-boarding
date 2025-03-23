@@ -8,6 +8,8 @@ import VideoBlock from "./VideoBlock";
 import TextSettings from "./TextSettings";
 import HeaderSettings from "./HeaderSettings";
 import ButtonSettings from "./ButtonSettings";
+import RadioSettings from "./RadioSettings";
+import SmallInputSettings from "./SmallInputSettings";
 
 
 export default function ModalBlockEditor() {
@@ -46,7 +48,7 @@ export default function ModalBlockEditor() {
   const addBlock = (index, type) => {
     const newBlock = { id: idCounterRef.current, type, content: "" };
     if (type === "radio") {
-      newBlock.content = ["Option 1", "Option 2", "Option3"];
+      newBlock.content = ["Option ", "Option ", "Option "];
     }
 
     if (type === "header") {
@@ -188,11 +190,6 @@ export default function ModalBlockEditor() {
         block.id === blockId ? { ...block, alignment } : block
       )
     );
-  };
-
-  const handleHeadingSelect = (block, level) => {
-    updateHeadingLevel(block.id, level);
-    setShowHeadingDropdown(false);
   };
 
   const handleAlignmentSelect = (block, alignment) => {
@@ -344,6 +341,51 @@ export default function ModalBlockEditor() {
     );
   };
 
+  // add radio option 
+  const addRadioOption = (blockId) => {
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((block) => {
+        if (block.id === blockId) {
+          return {
+            ...block,
+            content: [...block.content, "New Option"],
+          };
+        }
+        return block;
+      })
+    );
+  };
+
+  //update radio title
+  const updateRadioTitle = (blockId, newTitle) => {
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((block) => {
+        if (block.id === blockId && block.type === "radio") {
+          return {
+            ...block,
+            title: newTitle,
+          };
+        }
+        return block;
+      })
+    );
+  };
+
+  // update input title
+  const updateInputTitle = (blockId, newTitle) => {
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((block) => {
+        if (block.id === blockId && block.type === "smallinput") {
+          return {
+            ...block,
+            title: newTitle,
+          };
+        }
+        return block;
+      })
+    );
+  };
+
 
 
   const alignmentRef = useRef(null);
@@ -469,6 +511,36 @@ export default function ModalBlockEditor() {
             setActiveBlockId={setActiveBlockId}
           />
         );
+      case "radio":
+        return (
+          <RadioSettings
+            block={block}
+            index={index}
+            updateFontFamily={updateFontFamily}
+            updateTextColor={updateTextColor}
+            addRadioOption={addRadioOption}
+            updateAlignment={updateAlignment}
+            moveBlockUp={moveBlockUp}
+            moveBlockDown={moveBlockDown}
+            setBlocks={setBlocks}
+            setActiveBlockId={setActiveBlockId}
+          />
+        );
+        case "smallinput":
+          return (
+            <SmallInputSettings
+              block={block}
+              index={index}
+              updateFontFamily={updateFontFamily}
+              updateTextColor={updateTextColor}
+              updateAlignment={updateAlignment}
+              moveBlockUp={moveBlockUp}
+              moveBlockDown={moveBlockDown}
+              setBlocks={setBlocks}
+              setActiveBlockId={setActiveBlockId}
+            />
+          );
+
       default:
         return (
           <div className="p-2">
@@ -645,46 +717,138 @@ export default function ModalBlockEditor() {
                       )}
 
                       {block.type === "radio" && (
-                        <div>
+                        <div
+                          style={{
+                            textAlign: block.alignment || "left",
+                            color: block.color || "#000000",
+                            fontFamily: block.fontFamily || "inherit",
+                          }}
+                          className="p-2"
+                        >
+                          {/* Editable Title */}
+                          <div
+                            contentEditable
+                            suppressContentEditableWarning
+                            onBlur={(e) => {
+                              const newTitle = e.currentTarget.textContent.trim();
+                              updateRadioTitle(block.id, newTitle);
+                            }}
+                            className="mb-4 text-lg font-semibold outline-none"
+                            style={{
+                              textAlign: block.alignment || "left",
+                              fontFamily: block.fontFamily || "inherit",
+                              color: block.color || "#000000",
+                            }}
+                          >
+                            {block.title || "Untitled Question"}
+                          </div>
 
+                          {/* Radio Options */}
                           {block.content.map((option, i) => (
                             <div
                               key={i}
-                              className="group relative flex items-center space-x-2 mb-2"
+                              // If alignment is "right", use row-reverse so the input is visually on the right
+                              className={`group relative flex items-center mb-2 ${block.alignment === "right" ? "flex-row-reverse" : ""
+                                }`}
+                              style={{
+                                // Left, center, or right alignment for the whole row
+                                justifyContent:
+                                  block.alignment === "center"
+                                    ? "center"
+                                    : block.alignment === "right"
+                                      ? "flex-end"
+                                      : "flex-start",
+                              }}
                             >
+                              {/* Radio input (first in DOM, but row-reverse puts it on the right visually) */}
                               <input
                                 type="radio"
                                 name={`radio-${block.id}`}
                                 id={`radio-${block.id}-${i}`}
                                 className="mr-2"
                               />
+
+                              {/* Editable label text using a callback ref to prevent cursor jump */}
                               <span
+                                // A "callback ref" sets the textContent only if needed,
+                                // so React won't overwrite user edits mid-typing.
+                                ref={(node) => {
+                                  if (node && node.textContent !== option) {
+                                    node.textContent = option;
+                                  }
+                                }}
                                 contentEditable
                                 suppressContentEditableWarning
                                 onBlur={(e) => {
-                                  // If text isn't empty, update the option's text.
                                   const newText = e.currentTarget.textContent.trim();
                                   if (newText !== "") {
                                     updateRadioOption(block.id, i, newText);
                                   }
                                 }}
-                                className=" p-1 rounded w-full"
-                              >
-                                {option}
-                              </span>
+                                className="p-1 rounded w-full outline-none"
+                                style={{
+                                  color: block.color || "#000000",
+                                  fontFamily: block.fontFamily || "inherit",
+                                  textAlign: block.alignment || "left",
+                                }}
+                              />
 
-                              {/* Trash icon (appears on hover) */}
+                              {/* Trash icon; on the left side if alignment === 'right', else right side */}
                               <button
                                 type="button"
                                 onClick={() => removeRadioOption(block.id, i)}
-                                className="absolute right-0 mr-2 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 z-10"
+                                className={`absolute ${block.alignment === 'right' ? 'left-0 ml-2' : 'right-0 mr-2'
+                                  } opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 z-10`}
                               >
-                                < FontAwesomeIcon icon={faTrash} />
+                                <FontAwesomeIcon icon={faTrash} />
                               </button>
                             </div>
                           ))}
                         </div>
                       )}
+
+                      {block.type === "smallinput" && (
+                        <div
+                          style={{
+                            textAlign: block.alignment || "left",
+                            color: block.color || "#000000",
+                            fontFamily: block.fontFamily || "inherit",
+                          }}
+                          className="p-2"
+                        >
+                          {/* Editable Title for the input label */}
+                          <div
+                            contentEditable
+                            suppressContentEditableWarning
+                            onBlur={(e) => {
+                              const newTitle = e.currentTarget.textContent.trim();
+                              updateInputTitle(block.id, newTitle);
+                            }}
+                            className="mb-2 text-base font-semibold outline-none"
+                            style={{
+                              textAlign: block.alignment || "left",
+                            }}
+                          >
+                            {block.title || "Enter Label..."}
+                          </div>
+
+                          {/* Actual input box */}
+                          <input
+                            type="text"
+                            placeholder="Enter some text..."
+                            style={{
+                              textAlign: block.alignment || "left",
+                              color: block.color || "#000000",
+                              fontFamily: block.fontFamily || "inherit",
+                             
+                            }}
+                            className="border rounded px-2 py-1 w-full"
+                        
+                          />
+                        </div>
+                      )}
+
+
 
                       {/* Gear Icon (hidden by default, appears on hover) */}
                       <button

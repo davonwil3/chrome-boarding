@@ -10,6 +10,7 @@ import HeaderSettings from "./HeaderSettings";
 import ButtonSettings from "./ButtonSettings";
 import RadioSettings from "./RadioSettings";
 import SmallInputSettings from "./SmallInputSettings";
+import LargeInputSettings from "./LargeInputSettings";
 
 
 export default function ModalBlockEditor() {
@@ -386,6 +387,21 @@ export default function ModalBlockEditor() {
     );
   };
 
+  // update large input title
+  const updateLargeInputTitle = (blockId, newTitle) => {
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((block) => {
+        if (block.id === blockId && block.type === "largeinput") {
+          return {
+            ...block,
+            title: newTitle,
+          };
+        }
+        return block;
+      })
+    );
+  };
+
 
 
   const alignmentRef = useRef(null);
@@ -526,20 +542,34 @@ export default function ModalBlockEditor() {
             setActiveBlockId={setActiveBlockId}
           />
         );
-        case "smallinput":
-          return (
-            <SmallInputSettings
-              block={block}
-              index={index}
-              updateFontFamily={updateFontFamily}
-              updateTextColor={updateTextColor}
-              updateAlignment={updateAlignment}
-              moveBlockUp={moveBlockUp}
-              moveBlockDown={moveBlockDown}
-              setBlocks={setBlocks}
-              setActiveBlockId={setActiveBlockId}
-            />
-          );
+      case "smallinput":
+        return (
+          <SmallInputSettings
+            block={block}
+            index={index}
+            updateFontFamily={updateFontFamily}
+            updateTextColor={updateTextColor}
+            updateAlignment={updateAlignment}
+            moveBlockUp={moveBlockUp}
+            moveBlockDown={moveBlockDown}
+            setBlocks={setBlocks}
+            setActiveBlockId={setActiveBlockId}
+          />
+        );
+        case "largeinput":
+      return (
+        <LargeInputSettings
+          block={block}
+          index={index}
+          updateFontFamily={updateFontFamily}
+          updateTextColor={updateTextColor}
+          updateAlignment={updateAlignment}
+          moveBlockUp={moveBlockUp}
+          moveBlockDown={moveBlockDown}
+          setBlocks={setBlocks}
+          setActiveBlockId={setActiveBlockId}
+        />
+      );
 
       default:
         return (
@@ -840,15 +870,51 @@ export default function ModalBlockEditor() {
                               textAlign: block.alignment || "left",
                               color: block.color || "#000000",
                               fontFamily: block.fontFamily || "inherit",
-                             
+
                             }}
                             className="border rounded px-2 py-1 w-full"
-                        
+
                           />
                         </div>
                       )}
 
+                      {block.type === "largeinput" && (
+                        <div
+                          style={{
+                            textAlign: block.alignment || "left",
+                            color: block.color || "#000000",
+                            fontFamily: block.fontFamily || "inherit",
+                          }}
+                          className="p-2"
+                        >
+                          {/* Editable Title (similar to small input) */}
+                          <div
+                            contentEditable
+                            suppressContentEditableWarning
+                            onBlur={(e) => {
+                              const newTitle = e.currentTarget.textContent.trim();
+                              updateLargeInputTitle(block.id, newTitle);
+                            }}
+                            className="mb-2 text-base font-semibold outline-none"
+                            style={{
+                              textAlign: block.alignment || "left",
+                            }}
+                          >
+                            {block.title || "Enter Label..."}
+                          </div>
 
+                          {/* Actual Textarea */}
+                          <textarea
+                            placeholder="Enter a longer text..."
+                            style={{
+                              textAlign: block.alignment || "left",
+                              color: block.color || "#000000",
+                              fontFamily: block.fontFamily || "inherit",
+                            }}
+                            className="border rounded p-2 w-full h-32 resize-none"
+                          />
+                        </div>
+                      )}
 
                       {/* Gear Icon (hidden by default, appears on hover) */}
                       <button

@@ -408,7 +408,7 @@ export default function ModalBlockEditor() {
   const headingRef = useRef(null);
 
 
-  // Close dropdowns when clicking outside
+  // Close dropdowns when clicking outsid
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (alignmentRef.current && !alignmentRef.current.contains(event.target)) {

@@ -30,7 +30,11 @@ export default function ModalBlockEditor() {
   const [showHeadingDropdown, setShowHeadingDropdown] = useState(false);
   const [showAlignmentDropdown, setShowAlignmentDropdown] = useState(false);
 
+  // We'll store each block's DOM node in a ref object, keyed by block.id
+  const blockRefs = useRef({});
 
+  // We'll keep track of the settings bar position here
+  const [settingsPos, setSettingsPos] = useState({ x: 0, y: 0 });
   const fileInputRef = useRef(null);
   const videoInputRef = useRef(null);
 
@@ -171,6 +175,28 @@ export default function ModalBlockEditor() {
   // Toggles a block’s active state when clicked
   const handleBlockClick = (blockId) => {
     setActiveBlockId((prevId) => (prevId === blockId ? null : blockId));
+    positionSettingsBar(blockId);
+  };
+
+  const positionSettingsBar = (blockId) => {
+    const element = blockRefs.current[blockId];
+    if (!element) return; // safety check
+
+    // Get bounding rect in the viewport
+    const rect = element.getBoundingClientRect();
+
+    // For an absolutely-positioned element in the document:
+    // offset by the current scroll positions
+    const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+
+    // Decide exactly where you want to place the bar:
+    // For example, directly below the block:
+    const x = rect.left + scrollLeft;
+    const y = rect.bottom + scrollTop;
+
+    setSettingsPos({ x, y });
+    console.log("Settings bar position set to:", x, y);
   };
 
 
@@ -443,6 +469,7 @@ export default function ModalBlockEditor() {
 
 
   function renderSettingsBar(block, index) {
+    console.log(">> renderSettingsBar => block:", block, "index:", index);
     switch (block.type) {
       case "text":
         return (
@@ -556,20 +583,20 @@ export default function ModalBlockEditor() {
             setActiveBlockId={setActiveBlockId}
           />
         );
-        case "largeinput":
-      return (
-        <LargeInputSettings
-          block={block}
-          index={index}
-          updateFontFamily={updateFontFamily}
-          updateTextColor={updateTextColor}
-          updateAlignment={updateAlignment}
-          moveBlockUp={moveBlockUp}
-          moveBlockDown={moveBlockDown}
-          setBlocks={setBlocks}
-          setActiveBlockId={setActiveBlockId}
-        />
-      );
+      case "largeinput":
+        return (
+          <LargeInputSettings
+            block={block}
+            index={index}
+            updateFontFamily={updateFontFamily}
+            updateTextColor={updateTextColor}
+            updateAlignment={updateAlignment}
+            moveBlockUp={moveBlockUp}
+            moveBlockDown={moveBlockDown}
+            setBlocks={setBlocks}
+            setActiveBlockId={setActiveBlockId}
+          />
+        );
 
       default:
         return (
@@ -625,7 +652,7 @@ export default function ModalBlockEditor() {
       {showModal && (
         <div className="fixed inset-0 flex justify-center items-center z-50">
           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative max-h-[584px] overflow-y-scroll  ">
               {/* Close Button */}
               <button
                 onClick={() => setShowModal(false)}
@@ -640,7 +667,8 @@ export default function ModalBlockEditor() {
                   return (
                     <div
                       key={block.id}
-                      className="relative group p-4 border border-transparent hover:border-blue-600"
+                      className="relative group p-3 border border-transparent hover:border-blue-600"
+                      ref={(el) => (blockRefs.current[block.id] = el)}
 
                     >
                       {/* Editable content */}
@@ -945,22 +973,12 @@ export default function ModalBlockEditor() {
                         </button>
                       </div>
 
-                      {/* Settings bar */}
-                      {isActive && (
-                        <div
-                          className="absolute left-0 -bottom-16  bg-white border border-gray-300 z-[9999] flex items-center justify-between  rounded mt-8"
-                          onClick={(e) => e.stopPropagation()}
-                          ref={settingsRef}
-                        >
-                          {renderSettingsBar(block, index)}
-                        </div>
-                      )}
+
                     </div>
 
                   )
                 })}
-
-
+            
                 {/* If no blocks exist, show an Add button */}
                 {blocks.length === 0 && (
                   <div className="text-center">
@@ -1066,6 +1084,25 @@ export default function ModalBlockEditor() {
                 )}
               </div>
             </div>
+            {activeBlockId && (() => {
+                  console.log(">> activeBlockId is:", activeBlockId);
+                  const activeBlock = blocks.find((b) => b.id === activeBlockId);
+                  console.log("   Found block:", activeBlock);
+
+                  if (!activeBlock) return null;
+                  const activeIndex = blocks.findIndex((b) => b.id === activeBlockId);
+                  console.log("   Index is:", activeIndex);
+
+                  return (
+                    <div
+                      ref={settingsRef}
+                      style={{ position: "absolute", left: settingsPos.x, top: settingsPos.y, zIndex: 9999 }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {renderSettingsBar(activeBlock, activeIndex)}
+                    </div>
+                  );
+                })()}
           </div>
         </div>
       )}

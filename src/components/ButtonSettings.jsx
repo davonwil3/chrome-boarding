@@ -150,7 +150,7 @@ const ButtonSettings = ({
           <FontAwesomeIcon icon={faCaretDown} />
         </button>
         {showTextColorPicker && (
-          <div className="absolute z-20 mt-2" ref={textColorPickerRef}>
+          <div className="absolute z-20 mt-2" ref={textColorPickerRef} style={{ left: "100%", top: "0" }}>
             <HexColorPicker
               color={block.textColor || "#000000"}
               onChange={(newColor) => updateTextColor(block.id, newColor)}
@@ -179,7 +179,7 @@ const ButtonSettings = ({
           <FontAwesomeIcon icon={faCaretDown} />
         </button>
         {showBgColorPicker && (
-          <div className="absolute z-20 mt-2" ref={bgColorPickerRef}>
+          <div className="absolute z-20 mt-2" ref={bgColorPickerRef} style={{ left: "100%", top: "0" }}>
             <HexColorPicker
               color={block.bgColor || "#007bff"}
               onChange={(newColor) => updateButtonBgColor(block.id, newColor)}

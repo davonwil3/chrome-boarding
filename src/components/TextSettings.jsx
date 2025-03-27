@@ -116,7 +116,7 @@ const TextSettings = ({
                     <FontAwesomeIcon icon={faCaretDown} />
                 </button>
                 {showColorPicker && (
-                    <div className="absolute z-20 mt-2" ref={pickerRef}>
+                    <div className="absolute z-20 mt-2" ref={pickerRef} style={{ left: "100%", top: "0" }}>
                         <HexColorPicker
                             color={block.textColor || "#000000"}
                             onChange={(newColor) => updateTextColor(block.id, newColor)}

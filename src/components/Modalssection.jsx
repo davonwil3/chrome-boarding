@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTextSize, faH1, faImage, faVideo, faRectangleWide, faCircleDot, faInputText, faFileLines, faTrash, faGear } from '@fortawesome/pro-regular-svg-icons';
+import { faTextSize, faH1, faImage, faVideo, faRectangleWide, faCircleDot, faInputText, faFileLines, faTrash, faGear, faTableColumns } from '@fortawesome/pro-regular-svg-icons';
 import { useOutsideClick } from "./useOutsideClick";
 import ImageSettings from "./ImageSettings";
 import VideoSettings from "./VideoSettings";
@@ -11,6 +11,7 @@ import ButtonSettings from "./ButtonSettings";
 import RadioSettings from "./RadioSettings";
 import SmallInputSettings from "./SmallInputSettings";
 import LargeInputSettings from "./LargeInputSettings";
+import TwoColumnBlock from "./TwoColumnsBlock";
 
 
 export default function ModalBlockEditor() {
@@ -32,6 +33,7 @@ export default function ModalBlockEditor() {
 
   // We'll store each block's DOM node in a ref object, keyed by block.id
   const blockRefs = useRef({});
+  const modalRef = useRef(null);
 
   // We'll keep track of the settings bar position here
   const [settingsPos, setSettingsPos] = useState({ x: 0, y: 0 });
@@ -50,32 +52,45 @@ export default function ModalBlockEditor() {
   });
 
   // Inserts a new block after the given index.
+
   const addBlock = (index, type) => {
-    const newBlock = { id: idCounterRef.current, type, content: "" };
+    const newBlock = {
+      id: idCounterRef.current,
+      type,
+      content: ""
+    };
+
     if (type === "radio") {
       newBlock.content = ["Option ", "Option ", "Option "];
     }
 
     if (type === "header") {
-      // Default to h2 if you like
       newBlock.level = "h2";
-      // Optionally set alignment
       newBlock.alignment = "left";
     }
 
+    // NEW: If the block is "twocolumns", initialize two arrays
+    if (type === "twocolumns") {
+      newBlock.column1 = [];
+      newBlock.column2 = [];
+    }
 
-    idCounterRef.current += 1; // increment the counter
+    idCounterRef.current += 1;
+
     const newBlocks = [...blocks];
-    // if index is -1, insert at beginning.
     if (index === -1) {
+      // insert at beginning
       newBlocks.unshift(newBlock);
     } else {
+      // insert after the current index
       newBlocks.splice(index + 1, 0, newBlock);
     }
+
     setBlocks(newBlocks);
     setTooltipIndex(null);
     return newBlock.id;
   };
+
 
   // Updates the content for a block.
   const updateBlockContent = (id, content) => {
@@ -180,23 +195,40 @@ export default function ModalBlockEditor() {
 
   const positionSettingsBar = (blockId) => {
     const element = blockRefs.current[blockId];
-    if (!element) return; // safety check
+    if (!element) return;
 
-    // Get bounding rect in the viewport
     const rect = element.getBoundingClientRect();
+    const modalRect = modalRef.current?.getBoundingClientRect();
 
-    // For an absolutely-positioned element in the document:
-    // offset by the current scroll positions
-    const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    // If for some reason we can't measure the modal, fall back
+    if (!modalRect) {
+      // fallback to original logic
+      setSettingsPos({ x: rect.left + window.scrollX, y: rect.bottom + window.scrollY });
+      return;
+    }
 
-    // Decide exactly where you want to place the bar:
-    // For example, directly below the block:
-    const x = rect.left + scrollLeft;
-    const y = rect.bottom + scrollTop;
+    const blockBottom = rect.bottom;
+    const modalBottom = modalRect.bottom;
 
-    setSettingsPos({ x, y });
-    console.log("Settings bar position set to:", x, y);
+    if (blockBottom > modalBottom - 100) {
+      // 1) Place bar pinned at the bottom edge of the modal
+      const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+
+      let x = rect.left + scrollLeft;
+
+      let y = modalRect.bottom + scrollTop - 40; // minus 10 px margin
+
+      setSettingsPos({ x, y });
+    } else {
+      // 2) Original logic: place bar near the block
+      const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+
+      const x = rect.left + scrollLeft;
+      const y = rect.bottom + scrollTop;
+      setSettingsPos({ x, y });
+    }
   };
 
 
@@ -428,6 +460,34 @@ export default function ModalBlockEditor() {
     );
   };
 
+  function addSubBlockToColumn(parentBlockId, column, newType) {
+    setBlocks((prevBlocks) => {
+      // 1. Create the sub-block
+      const newId = idCounterRef.current++;
+      const newSubBlock = {
+        id: newId,
+        type: newType,
+        content: "" // or default fields
+      };
+
+      // 2. Insert sub-block into the main blocks array
+      const updatedBlocks = [...prevBlocks, newSubBlock];
+
+      // 3. Also add that sub-block’s ID to the two-columns block
+      return updatedBlocks.map((b) => {
+        if (b.id === parentBlockId && b.type === "twocolumns") {
+          return {
+            ...b,
+            [column]: [...b[column], newId]
+          };
+        }
+        return b;
+      });
+    });
+  }
+
+
+
 
 
   const alignmentRef = useRef(null);
@@ -610,6 +670,8 @@ export default function ModalBlockEditor() {
 
 
 
+
+
   return (
     <div className="p-4">
       <button
@@ -652,7 +714,7 @@ export default function ModalBlockEditor() {
       {showModal && (
         <div className="fixed inset-0 flex justify-center items-center z-50">
           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative max-h-[584px] overflow-y-scroll  ">
+            <div ref={modalRef} className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative max-h-[424px] overflow-y-scroll  ">
               {/* Close Button */}
               <button
                 onClick={() => setShowModal(false)}
@@ -727,7 +789,7 @@ export default function ModalBlockEditor() {
                                 src={block.content}
                                 alt=""
                                 style={{
-                                  width: block.width || "100%",
+                                  width: block.width || "50%",
                                   borderRadius: block.borderRadius || "0",
                                   maxWidth: "100%",
                                   height: "auto",
@@ -755,23 +817,25 @@ export default function ModalBlockEditor() {
                           </div>
                         </div>
                       )}
-
                       {block.type === "button" && (
-                        <button
-                          className="px-4 py-2 rounded"
-                          contentEditable
-                          suppressContentEditableWarning
-                          onBlur={(e) => updateBlockContent(block.id, e.target.innerText)}
-                          style={{
-                            backgroundColor: block.backgroundColor || "#2563eb", // default blue
-                            color: block.color || "white",
-                            borderRadius: block.borderRadius || "8px",
-                            fontSize: block.fontSize || "16px",
-                            textAlign: block.alignment || "center",
-                          }}
-                        >
-                          {block.content || "Button"}
-                        </button>
+                        <div style={{ textAlign: block.alignment || "left" }} >
+                          <button
+                            className="px-4 py-2 rounded"
+                            contentEditable
+                            suppressContentEditableWarning
+                            onBlur={(e) => updateBlockContent(block.id, e.target.innerText)}
+                            style={{
+                              backgroundColor: block.backgroundColor || "#2563eb",
+                              color: block.color || "white",
+                              borderRadius: block.borderRadius || "8px",
+                              fontSize: block.fontSize || "16px",
+                              // textAlign here affects the button's text content,
+                              // but the div wraps the button for horizontal placement.
+                            }}
+                          >
+                            {block.content || "Button"}
+                          </button>
+                        </div>
                       )}
 
                       {block.type === "radio" && (
@@ -900,7 +964,7 @@ export default function ModalBlockEditor() {
                               fontFamily: block.fontFamily || "inherit",
 
                             }}
-                            className="border rounded px-2 py-1 w-full"
+                            className="border rounded px-2 py-2 w-full"
 
                           />
                         </div>
@@ -944,6 +1008,32 @@ export default function ModalBlockEditor() {
                         </div>
                       )}
 
+                      {block.type === "twocolumns" && (
+                        <TwoColumnBlock
+                          key={block.id}
+                          block={block}
+                          blocks={blocks}
+                          // The primary setter for blocks state:
+                          setBlocks={setBlocks}
+                          // For generating new IDs, if you need it inside TwoColumnBlock:
+                          idCounterRef={idCounterRef}
+                          // If you have a helper that adds sub-blocks to a column
+                          addSubBlockToColumn={addSubBlockToColumn}
+                          // Existing update functions (for radio, input, etc.)
+                          updateBlockContent={updateBlockContent}
+                          updateRadioOption={updateRadioOption}
+                          updateRadioTitle={updateRadioTitle}
+                          removeRadioOption={removeRadioOption}
+                          updateInputTitle={updateInputTitle}
+                          updateLargeInputTitle={updateLargeInputTitle}
+
+                          // If you need to open your tooltip:
+                          setTooltipIndex={setTooltipIndex}
+                        />
+                      )}
+
+
+
                       {/* Gear Icon (hidden by default, appears on hover) */}
                       <button
                         onClick={(e) => {
@@ -972,13 +1062,11 @@ export default function ModalBlockEditor() {
                           +
                         </button>
                       </div>
-
-
                     </div>
 
                   )
                 })}
-            
+
                 {/* If no blocks exist, show an Add button */}
                 {blocks.length === 0 && (
                   <div className="text-center">
@@ -1077,6 +1165,13 @@ export default function ModalBlockEditor() {
                           <FontAwesomeIcon icon={faFileLines} className="mb-1" size="xl" />
                           <span>Large Input</span>
                         </button>
+                        <button
+                          onClick={() => addBlock(tooltipIndex, "twocolumns")}
+                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                        >
+                          <FontAwesomeIcon icon={faTableColumns} className="mb-1" size="xl" />
+                          <span>Two Columns</span>
+                        </button>
 
                       </div>
                     </div>
@@ -1085,24 +1180,24 @@ export default function ModalBlockEditor() {
               </div>
             </div>
             {activeBlockId && (() => {
-                  console.log(">> activeBlockId is:", activeBlockId);
-                  const activeBlock = blocks.find((b) => b.id === activeBlockId);
-                  console.log("   Found block:", activeBlock);
+              console.log(">> activeBlockId is:", activeBlockId);
+              const activeBlock = blocks.find((b) => b.id === activeBlockId);
+              console.log("   Found block:", activeBlock);
 
-                  if (!activeBlock) return null;
-                  const activeIndex = blocks.findIndex((b) => b.id === activeBlockId);
-                  console.log("   Index is:", activeIndex);
+              if (!activeBlock) return null;
+              const activeIndex = blocks.findIndex((b) => b.id === activeBlockId);
+              console.log("   Index is:", activeIndex);
 
-                  return (
-                    <div
-                      ref={settingsRef}
-                      style={{ position: "absolute", left: settingsPos.x, top: settingsPos.y, zIndex: 9999 }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {renderSettingsBar(activeBlock, activeIndex)}
-                    </div>
-                  );
-                })()}
+              return (
+                <div
+                  ref={settingsRef}
+                  style={{ position: "absolute", left: settingsPos.x, top: settingsPos.y, zIndex: 9999 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {renderSettingsBar(activeBlock, activeIndex)}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

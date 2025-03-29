@@ -30,7 +30,8 @@ const TextSettings = ({
     setShowAlignmentDropdown,
     alignmentRef,
     pickerRef,
-    handleAlignmentSelect
+    handleAlignmentSelect,
+    deleteBlock
 }) => {
     return (
         <div
@@ -136,7 +137,7 @@ const TextSettings = ({
 
             {/* Trash Icon */}
             <button
-                onClick={() => setBlocks((prev) => prev.filter((b) => b.id !== block.id))}
+                onClick={() => deleteBlock(block.id)}
                 className="text-red-500 hover:text-red-700"
             >
                 <FontAwesomeIcon icon={faTrash} />

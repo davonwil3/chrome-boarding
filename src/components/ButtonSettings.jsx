@@ -25,7 +25,8 @@ const ButtonSettings = ({
   moveBlockUp,
   moveBlockDown,
   setBlocks,
-  setActiveBlockId
+  setActiveBlockId,
+  deleteBlock
 }) => {
   const [showAlignmentDropdown, setShowAlignmentDropdown] = useState(false);
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
@@ -69,7 +70,7 @@ const ButtonSettings = ({
   }, []);
 
   const handleDeleteBlock = () => {
-    setBlocks((prev) => prev.filter((b) => b.id !== block.id));
+    deleteBlock(block.id);
   };
 
   const handleAlignmentSelect = (alignment) => {

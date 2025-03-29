@@ -20,6 +20,7 @@ const SmallInputSettings = ({
   moveBlockDown,
   setBlocks,
   setActiveBlockId,
+  deleteBlock,
 }) => {
   const [showAlignmentDropdown, setShowAlignmentDropdown] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -127,7 +128,7 @@ const SmallInputSettings = ({
 
       {/* Delete Block */}
       <button
-        onClick={() => setBlocks((prev) => prev.filter((b) => b.id !== block.id))}
+        onClick={() => deleteBlock(block.id)}
         className="text-red-500 hover:text-red-700"
       >
         <FontAwesomeIcon icon={faTrash} />

@@ -14,8 +14,8 @@ import LargeInputSettings from "./LargeInputSettings";
 import TwoColumnBlock from "./TwoColumnsBlock";
 
 
-export default function ModalBlockEditor() {
-  const [showModal, setShowModal] = useState(false);
+export default function ModalBlockEditor({modalWidth, setShowModal}) {
+
   // Each block has: id, type, content
   const [blocks, setBlocks] = useState([]);
   // For showing tooltip on a block; store the index of the block where plus was clicked.
@@ -42,6 +42,9 @@ export default function ModalBlockEditor() {
 
   // Use a ref to store a unique id counter.
   const idCounterRef = useRef(1);
+
+
+
 
   // Close the color picker when clicking outside
   // Use the hook to close the color picker when clicking outside the popup
@@ -91,13 +94,61 @@ export default function ModalBlockEditor() {
     return newBlock.id;
   };
 
+  const deleteBlock = (blockId) => {
+    setBlocks((prevBlocks) => {
+      // 1. Remove block from the main blocks array
+      const newBlocks = prevBlocks.filter((b) => b.id !== blockId);
+
+      // 2. Also remove that blockId from any two-columns block column array
+      return newBlocks.map((block) => {
+        if (block.type === "twocolumns") {
+          return {
+            ...block,
+            column1: block.column1.filter((id) => id !== blockId),
+            column2: block.column2.filter((id) => id !== blockId),
+          };
+        }
+        return block;
+      });
+    });
+
+    if (activeBlockId === blockId) {
+      setActiveBlockId(null);
+    }
+  };
+
+
 
   // Updates the content for a block.
   const updateBlockContent = (id, content) => {
     setBlocks((prevBlocks) =>
-      prevBlocks.map((b) => (b.id === id ? { ...b, content } : b))
+      prevBlocks.map((block) => {
+        if (block.id === id) {
+          // Regular top-level block
+          return { ...block, content };
+        }
+
+        if (block.type === "twocolumns") {
+          const column1Updated = block.column1.map((sub) =>
+            sub.id === id ? { ...sub, content } : sub
+          );
+          const column2Updated = block.column2.map((sub) =>
+            sub.id === id ? { ...sub, content } : sub
+          );
+
+          const column1Changed = column1Updated.some((b, i) => b !== block.column1[i]);
+          const column2Changed = column2Updated.some((b, i) => b !== block.column2[i]);
+
+          if (column1Changed || column2Changed) {
+            return { ...block, column1: column1Updated, column2: column2Updated };
+          }
+        }
+
+        return block;
+      })
     );
   };
+
 
   // Moves a block up in the order.
   const moveBlockUp = (index) => {
@@ -121,16 +172,29 @@ export default function ModalBlockEditor() {
     setBlocks(newBlocks);
   };
   // When the "Image" button is clicked:
-  const handleAddImageBlock = (index) => {
-    const newId = addBlock(index, "image");
-    setCurrentImageBlockId(newId);
-    // Increase delay to 200ms to ensure the new block is added
-    setTimeout(() => {
-      if (fileInputRef.current) {
-        fileInputRef.current.click();
-      }
-    }, 200);
+  const handleAddImageBlockFlexible = () => {
+    if (tooltipIndex?.parentId && tooltipIndex?.column) {
+      const newId = addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "image");
+      console.log("New image block ID:", newId);
+      setCurrentImageBlockId(newId);
+      setTimeout(() => {
+        if (fileInputRef.current) {
+          fileInputRef.current.click();
+        }
+      }, 200);
+    } else {
+      const newId = addBlock(tooltipIndex, "image");
+      setCurrentImageBlockId(newId);
+      setTimeout(() => {
+        if (fileInputRef.current) {
+          fileInputRef.current.click();
+        }
+      }, 200);
+    }
+
+    setTooltipIndex(null);
   };
+
 
   // File input change handler
   const handleFileChange = (id, file) => {
@@ -143,14 +207,27 @@ export default function ModalBlockEditor() {
     reader.readAsDataURL(file);
   };
 
-  const handleAddVideoBlock = (index) => {
-    const newId = addBlock(index, "video");
-    setCurrentVideoBlockId(newId);  // use the video-specific state
-    setTimeout(() => {
-      if (videoInputRef.current) {
-        videoInputRef.current.click();
-      }
-    }, 200);
+  const handleAddVideoBlockFlexible = () => {
+    if (tooltipIndex?.parentId && tooltipIndex?.column) {
+      const newId = addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "video");
+      console.log("New video block ID:", newId);
+      setCurrentVideoBlockId(newId);
+      setTimeout(() => {
+        if (videoInputRef.current) {
+          videoInputRef.current.click();
+        }
+      }, 200);
+    } else {
+      const newId = addBlock(tooltipIndex, "video");
+      setCurrentVideoBlockId(newId);
+      setTimeout(() => {
+        if (videoInputRef.current) {
+          videoInputRef.current.click();
+        }
+      }, 200);
+    }
+
+    setTooltipIndex(null);
   };
 
 
@@ -195,41 +272,42 @@ export default function ModalBlockEditor() {
 
   const positionSettingsBar = (blockId) => {
     const element = blockRefs.current[blockId];
+    const modalElement = modalRef.current;
+
     if (!element) return;
 
     const rect = element.getBoundingClientRect();
-    const modalRect = modalRef.current?.getBoundingClientRect();
+    const modalRect = modalElement?.getBoundingClientRect();
 
-    // If for some reason we can't measure the modal, fall back
+    const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+
     if (!modalRect) {
-      // fallback to original logic
-      setSettingsPos({ x: rect.left + window.scrollX, y: rect.bottom + window.scrollY });
+      // fallback logic if modal is missing
+      setSettingsPos({
+        x: rect.left + scrollLeft,
+        y: rect.bottom + scrollTop,
+      });
       return;
     }
 
     const blockBottom = rect.bottom;
     const modalBottom = modalRect.bottom;
 
+    let x = modalRect.left + scrollLeft + 16; // 🔥 aligned to left edge of modal + some padding
+    let y;
+
     if (blockBottom > modalBottom - 100) {
-      // 1) Place bar pinned at the bottom edge of the modal
-      const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-
-      let x = rect.left + scrollLeft;
-
-      let y = modalRect.bottom + scrollTop - 40; // minus 10 px margin
-
-      setSettingsPos({ x, y });
+      // Place at the bottom of modal
+      y = modalRect.bottom + scrollTop - 48; // Adjust vertical offset as needed
     } else {
-      // 2) Original logic: place bar near the block
-      const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-
-      const x = rect.left + scrollLeft;
-      const y = rect.bottom + scrollTop;
-      setSettingsPos({ x, y });
+      // Default: just under the block
+      y = rect.bottom + scrollTop;
     }
+
+    setSettingsPos({ x, y });
   };
+
 
 
 
@@ -461,14 +539,20 @@ export default function ModalBlockEditor() {
   };
 
   function addSubBlockToColumn(parentBlockId, column, newType) {
+    const newId = idCounterRef.current++;
     setBlocks((prevBlocks) => {
       // 1. Create the sub-block
-      const newId = idCounterRef.current++;
+
       const newSubBlock = {
         id: newId,
         type: newType,
-        content: "" // or default fields
+        content: "", // or default fields
+        isSubBlock: true,
       };
+
+      if (newType === "radio") {
+        newSubBlock.content = ["Option ", "Option ", "Option "];
+      }
 
       // 2. Insert sub-block into the main blocks array
       const updatedBlocks = [...prevBlocks, newSubBlock];
@@ -484,6 +568,8 @@ export default function ModalBlockEditor() {
         return b;
       });
     });
+
+    return newId;
   }
 
 
@@ -554,6 +640,7 @@ export default function ModalBlockEditor() {
             pickerRef={pickerRef}
             showAlignmentDropdown={showAlignmentDropdown}
             setShowAlignmentDropdown={setShowAlignmentDropdown}
+            deleteBlock={deleteBlock}
           />
         );
       case "header":
@@ -572,11 +659,12 @@ export default function ModalBlockEditor() {
             moveBlockDown={moveBlockDown}
             setBlocks={setBlocks}
             setActiveBlockId={setActiveBlockId}
+            deleteBlock={deleteBlock}
           />
         );
       case "image":
         return (
-          <ImageSettings block={block} index={index} updateImageWidth={updateImageWidth} updateBorderRadius={updateBorderRadius} setBlocks={setBlocks} setActiveBlockId={setActiveBlockId} setCurrentImageBlockId={setCurrentImageBlockId} fileInputRef={fileInputRef} moveBlockDown={moveBlockDown} moveBlockUp={moveBlockUp} />
+          <ImageSettings block={block} index={index} updateImageWidth={updateImageWidth} updateBorderRadius={updateBorderRadius} setBlocks={setBlocks} setActiveBlockId={setActiveBlockId} setCurrentImageBlockId={setCurrentImageBlockId} fileInputRef={fileInputRef} moveBlockDown={moveBlockDown} moveBlockUp={moveBlockUp} deleteBlock={deleteBlock} />
         );
       case "video":
         return (
@@ -594,6 +682,7 @@ export default function ModalBlockEditor() {
             moveBlockDown={moveBlockDown}
             setBlocks={setBlocks}
             setActiveBlockId={setActiveBlockId}
+            deleteBlock={deleteBlock}
           />
         );
       case "button":
@@ -612,6 +701,7 @@ export default function ModalBlockEditor() {
             moveBlockDown={moveBlockDown}
             setBlocks={setBlocks}
             setActiveBlockId={setActiveBlockId}
+            deleteBlock={deleteBlock}
           />
         );
       case "radio":
@@ -627,6 +717,7 @@ export default function ModalBlockEditor() {
             moveBlockDown={moveBlockDown}
             setBlocks={setBlocks}
             setActiveBlockId={setActiveBlockId}
+            deleteBlock={deleteBlock}
           />
         );
       case "smallinput":
@@ -641,6 +732,7 @@ export default function ModalBlockEditor() {
             moveBlockDown={moveBlockDown}
             setBlocks={setBlocks}
             setActiveBlockId={setActiveBlockId}
+            deleteBlock={deleteBlock}
           />
         );
       case "largeinput":
@@ -655,8 +747,34 @@ export default function ModalBlockEditor() {
             moveBlockDown={moveBlockDown}
             setBlocks={setBlocks}
             setActiveBlockId={setActiveBlockId}
+            deleteBlock={deleteBlock}
           />
         );
+      case "twocolumns":
+        return (
+          <div
+            className="p-4 inline-flex gap-4 items-center bg-white rounded shadow relative z-60"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Delete Block */}
+            <button
+              onClick={() =>
+                deleteBlock(block.id)
+              }
+              className="text-red-500 hover:text-red-700 pr-2"
+            >
+              <span className="text-black">Delete Columns</span> <FontAwesomeIcon icon={faTrash} />
+            </button>
+             {/* Close Button */}
+             <button
+                onClick={() => setActiveBlockId(null)}
+                className="text-gray-500 hover:text-gray-800 absolute top-1 right-1"
+            >
+                ✖
+            </button>
+          </div>
+        );
+
 
       default:
         return (
@@ -674,12 +792,7 @@ export default function ModalBlockEditor() {
 
   return (
     <div className="p-4">
-      <button
-        onClick={() => setShowModal(true)}
-        className="bg-blue-600 text-white px-4 py-2 rounded"
-      >
-        Open Block Editor
-      </button>
+      
       {/* Hidden file input */}
       <input
         type="file"
@@ -711,10 +824,10 @@ export default function ModalBlockEditor() {
         }}
       />
 
-      {showModal && (
+      
         <div className="fixed inset-0 flex justify-center items-center z-50">
           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div ref={modalRef} className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative max-h-[424px] overflow-y-scroll  ">
+            <div ref={modalRef} className="bg-white rounded-lg shadow-lg w-full  p-6 relative max-h-[464px] overflow-y-scroll  "  style={{ width: modalWidth + "px" }} >
               {/* Close Button */}
               <button
                 onClick={() => setShowModal(false)}
@@ -723,13 +836,13 @@ export default function ModalBlockEditor() {
                 ✖
               </button>
               <div className="">
-                {blocks.map((block, index) => {
+                {blocks.filter((block) => !block.isSubBlock).map((block, index) => {
 
                   const isActive = block.id === activeBlockId;
                   return (
                     <div
                       key={block.id}
-                      className="relative group p-3 border border-transparent hover:border-blue-600"
+                      className="relative group p-2 border border-transparent hover:border-blue-600"
                       ref={(el) => (blockRefs.current[block.id] = el)}
 
                     >
@@ -738,7 +851,7 @@ export default function ModalBlockEditor() {
                         <div
                           contentEditable
                           suppressContentEditableWarning
-                          className="min-h-[40px] outline-none"
+                          className="min-h-[40px] outline-none p-2"
                           onBlur={(e) =>
                             updateBlockContent(block.id, e.target.innerText)
                           }
@@ -773,7 +886,7 @@ export default function ModalBlockEditor() {
                             suppressContentEditableWarning
                             style={{ textAlign: block.alignment, color: block.color, textDecoration: block.isUnderlined ? 'underline' : 'none', fontWeight: block.isBold ? 'bold' : 'normal', fontStyle: block.isItalic ? 'italic' : 'normal', fontFamily: block.fontFamily }}
                             // Use the dynamic class instead of a fixed text size
-                            className={`font-bold ${headingSizeClass} outline-none`}
+                            className={`font-bold ${headingSizeClass} outline-none p-2`}
                             onBlur={(e) => updateBlockContent(block.id, e.target.textContent)}
                           >
                             {block.content}
@@ -957,29 +1070,26 @@ export default function ModalBlockEditor() {
                           {/* Actual input box */}
                           <input
                             type="text"
-                            placeholder="Enter some text..."
                             style={{
                               textAlign: block.alignment || "left",
                               color: block.color || "#000000",
                               fontFamily: block.fontFamily || "inherit",
-
                             }}
-                            className="border rounded px-2 py-2 w-full"
-
+                            className="border rounded px-2 py-2 w-full focus:outline-none"
                           />
-                        </div>
-                      )}
+                          </div>
+                          )}
 
-                      {block.type === "largeinput" && (
-                        <div
-                          style={{
-                            textAlign: block.alignment || "left",
-                            color: block.color || "#000000",
-                            fontFamily: block.fontFamily || "inherit",
-                          }}
-                          className="p-2"
-                        >
-                          {/* Editable Title (similar to small input) */}
+                          {block.type === "largeinput" && (
+                          <div
+                            style={{
+                              textAlign: block.alignment || "left",
+                              color: block.color || "#000000",
+                              fontFamily: block.fontFamily || "inherit",
+                            }}
+                            className="p-2"
+                          >
+                            {/* Editable Title (similar to small input) */}
                           <div
                             contentEditable
                             suppressContentEditableWarning
@@ -997,13 +1107,13 @@ export default function ModalBlockEditor() {
 
                           {/* Actual Textarea */}
                           <textarea
-                            placeholder="Enter a longer text..."
+                           
                             style={{
                               textAlign: block.alignment || "left",
                               color: block.color || "#000000",
                               fontFamily: block.fontFamily || "inherit",
                             }}
-                            className="border rounded p-2 w-full h-32 resize-none"
+                            className="border rounded p-2 w-full h-32 resize-none focus:outline-none"
                           />
                         </div>
                       )}
@@ -1026,6 +1136,8 @@ export default function ModalBlockEditor() {
                           removeRadioOption={removeRadioOption}
                           updateInputTitle={updateInputTitle}
                           updateLargeInputTitle={updateLargeInputTitle}
+                          handleBlockClick={handleBlockClick}
+                          blockRefs={blockRefs}
 
                           // If you need to open your tooltip:
                           setTooltipIndex={setTooltipIndex}
@@ -1040,7 +1152,7 @@ export default function ModalBlockEditor() {
                           e.stopPropagation();
                           handleBlockClick(block.id);
                         }}
-                        className="absolute top-1 right-1 text-gray-500 hover:text-gray-800
+                        className="absolute top-0 right-0 text-gray-500 hover:text-gray-800
                opacity-0 group-hover:opacity-100
                bg-transparent border-none shadow-none p-0 cursor-pointer
                transition-opacity duration-200"
@@ -1056,8 +1168,7 @@ export default function ModalBlockEditor() {
                             setTooltipIndex(index);
                             e.stopPropagation();
                           }}
-
-                          className="bg-blue-600 text-white p-1 rounded-full shadow"
+                          className="bg-blue-600 text-white w-6 h-6 rounded-full shadow flex items-center justify-center text-xl leading-none"
                         >
                           +
                         </button>
@@ -1110,56 +1221,103 @@ export default function ModalBlockEditor() {
                       </p>
                       <div className="grid grid-cols-2 gap-2 mt-2 bg-gray-100 p-4">
                         <button
-                          onClick={() => addBlock(tooltipIndex, "text")}
+                          onClick={() => {
+                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "text");
+                            } else {
+                              addBlock(tooltipIndex, "text");
+                            }
+                            setTooltipIndex(null);
+                          }}
                           className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                         >
                           <FontAwesomeIcon icon={faTextSize} className="mb-1" size="xl" />
                           <span>Text</span>
                         </button>
                         <button
-                          onClick={() => addBlock(tooltipIndex, "header")}
+                          onClick={() => {
+                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "header");
+                            }
+                            else {
+                              addBlock(tooltipIndex, "header");
+                            }
+                            setTooltipIndex(null);
+                          }}
                           className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                         >
                           <FontAwesomeIcon icon={faH1} className="mb-1" size="xl" />
                           <span>Header</span>
                         </button>
                         <button
-                          onClick={() => handleAddImageBlock(tooltipIndex)}
+                          onClick={handleAddImageBlockFlexible}
                           className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                         >
                           <FontAwesomeIcon icon={faImage} className="mb-1" size="xl" />
                           <span>Image</span>
                         </button>
                         <button
-                          onClick={() => handleAddVideoBlock(tooltipIndex)}
+                          onClick={handleAddVideoBlockFlexible}
                           className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                         >
                           <FontAwesomeIcon icon={faVideo} className="mb-1" size="xl" />
                           <span>Video</span>
                         </button>
                         <button
-                          onClick={() => addBlock(tooltipIndex, "button")}
+                          onClick={() => {
+                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "button");
+                            }
+                            else {
+                              addBlock(tooltipIndex, "button");
+                            }
+                            setTooltipIndex(null);
+                          }}
                           className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                         >
                           <FontAwesomeIcon icon={faRectangleWide} className="mb-1" size="xl" />
                           <span>Button</span>
                         </button>
                         <button
-                          onClick={() => addBlock(tooltipIndex, "radio")}
+                          onClick={() => {
+                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "radio");
+                            }
+                            else {
+                              addBlock(tooltipIndex, "radio");
+                            }
+                            setTooltipIndex(null);
+                          }}
                           className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                         >
                           <FontAwesomeIcon icon={faCircleDot} className="mb-1" size="xl" />
                           <span>Radio</span>
                         </button>
                         <button
-                          onClick={() => addBlock(tooltipIndex, "smallinput")}
+                          onClick={() => {
+                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "smallinput");
+                            }
+                            else {
+                              addBlock(tooltipIndex, "smallinput");
+                            }
+                            setTooltipIndex(null);
+                          }}
                           className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                         >
                           <FontAwesomeIcon icon={faInputText} className="mb-1" size="xl" />
                           <span>Small Input</span>
                         </button>
                         <button
-                          onClick={() => addBlock(tooltipIndex, "largeinput")}
+                          onClick={() => {
+                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "largeinput");
+                            }
+                            else {
+                              addBlock(tooltipIndex, "largeinput");
+                            }
+                            setTooltipIndex(null);
+                          }}
                           className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                         >
                           <FontAwesomeIcon icon={faFileLines} className="mb-1" size="xl" />
@@ -1200,7 +1358,7 @@ export default function ModalBlockEditor() {
             })()}
           </div>
         </div>
-      )}
+      
 
     </div>
 

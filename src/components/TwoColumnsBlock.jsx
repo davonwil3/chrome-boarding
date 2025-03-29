@@ -1,7 +1,7 @@
 import React from "react";
 import VideoBlock from "./VideoBlock";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash } from "@fortawesome/pro-regular-svg-icons";
+import { faTrash, faWrench } from "@fortawesome/pro-regular-svg-icons";
 function TwoColumnsBlock({
   block,
   blocks,                // the full array of blocks
@@ -17,6 +17,8 @@ function TwoColumnsBlock({
   updateInputTitle,
   updateLargeInputTitle,
   updateBlockContent,
+  handleBlockClick,
+  blockRefs
 
 }) {
   if (!block) return null;
@@ -25,15 +27,16 @@ function TwoColumnsBlock({
   const blockIndex = blocks.findIndex((b) => b.id === block.id);
 
   return (
-    <div className="group relative p-2 border rounded">
+    <div className="group relative  ">
       <div className="flex gap-4">
         {/* Column 1 */}
         <div
           className="
-          relative group w-1/2 border p-2 rounded min-h-[80px]
+          relative group w-1/2 min-h-[80px]
           transition-all duration-200 ease-in-out
           hover:bg-blue-50
         "
+
         >
           {block.column1.length === 0 ? (
             // If column1 is empty, show a hoverable + button
@@ -61,10 +64,11 @@ function TwoColumnsBlock({
               // 1) Find the sub-block in the main blocks array
               const subBlock = blocks.find((b) => b.id === subBlockId);
               if (!subBlock) return null; // safety check
+              console.log(subBlock);
 
               // 2) Render each subBlock by type
               return (
-                <div key={subBlock.id} className="mb-4">
+                <div key={subBlock.id} ref={(el) => (blockRefs.current[subBlock.id] = el)}>
                   {/* TEXT Block */}
                   {subBlock.type === "text" && (
                     <div
@@ -121,7 +125,7 @@ function TwoColumnsBlock({
                         }}
                         onBlur={(e) => updateBlockContent(subBlock.id, e.target.textContent)}
                       >
-                        {subBlock.content}
+                        {subBlock.content || "Heading"}
                       </TagName>
                     );
                   })()}
@@ -290,13 +294,13 @@ function TwoColumnsBlock({
 
                       <input
                         type="text"
-                        placeholder="Enter some text..."
+                        
                         style={{
                           textAlign: subBlock.alignment || "left",
                           color: subBlock.color || "#000000",
                           fontFamily: subBlock.fontFamily || "inherit",
                         }}
-                        className="border rounded px-2 py-2 w-full"
+                        className="border rounded px-2 py-2 w-full focus:outline-none"
                       />
                     </div>
                   )}
@@ -327,16 +331,31 @@ function TwoColumnsBlock({
                       </div>
 
                       <textarea
-                        placeholder="Enter a longer text..."
+                        
                         style={{
                           textAlign: subBlock.alignment || "left",
                           color: subBlock.color || "#000000",
                           fontFamily: subBlock.fontFamily || "inherit",
                         }}
-                        className="border rounded p-2 w-full h-32 resize-none"
+                        className="border rounded p-2 w-full h-32 resize-none focus:outline-none"
                       />
                     </div>
                   )}
+                  {/* Gear Icon (hidden by default, appears on hover) */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBlockClick(subBlock.id);
+                    }}
+                    className="absolute top-1 right-1 text-gray-500 hover:text-gray-800
+                                 opacity-0 group-hover:opacity-100
+                                 bg-transparent border-none shadow-none p-0 cursor-pointer
+                                 transition-opacity duration-200"
+                  >
+                    <FontAwesomeIcon icon={faWrench} />
+                  </button>
+
+                  {/* Close Settings */}
                 </div>
               );
             })
@@ -347,7 +366,7 @@ function TwoColumnsBlock({
         {/* Column 2 */}
         <div
           className="
-            relative group w-1/2 border p-2 rounded min-h-[80px]
+            relative group w-1/2  min-h-[80px]
             transition-all duration-200 ease-in-out
             hover:bg-blue-50
           "
@@ -381,7 +400,7 @@ function TwoColumnsBlock({
 
               // 2) Render by subBlock.type
               return (
-                <div key={subBlock.id} className="mb-4">
+                <div key={subBlock.id} ref={(el) => (blockRefs.current[subBlock.id] = el)} >
                   {/* TEXT Block */}
                   {subBlock.type === "text" && (
                     <div
@@ -436,7 +455,7 @@ function TwoColumnsBlock({
                         }}
                         onBlur={(e) => updateBlockContent(subBlock.id, e.target.textContent)}
                       >
-                        {subBlock.content}
+                        {subBlock.content || "Heading"}
                       </TagName>
                     );
                   })()}
@@ -475,7 +494,19 @@ function TwoColumnsBlock({
 
                   {/* BUTTON Block */}
                   {subBlock.type === "button" && (
-                    <div style={{ textAlign: subBlock.alignment || "left" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent:
+                          subBlock.alignment === "right"
+                            ? "flex-end"
+                            : subBlock.alignment === "center"
+                              ? "center"
+                              : "flex-start",
+                       
+                      }}
+                    >
                       <button
                         contentEditable
                         suppressContentEditableWarning
@@ -492,6 +523,7 @@ function TwoColumnsBlock({
                       </button>
                     </div>
                   )}
+
 
                   {/* RADIO Block */}
                   {subBlock.type === "radio" && (
@@ -604,13 +636,13 @@ function TwoColumnsBlock({
 
                       <input
                         type="text"
-                        placeholder="Enter some text..."
+                        
                         style={{
                           textAlign: subBlock.alignment || "left",
                           color: subBlock.color || "#000000",
                           fontFamily: subBlock.fontFamily || "inherit",
                         }}
-                        className="border rounded px-2 py-2 w-full"
+                        className="border rounded px-2 py-2 w-full focus:outline-none"
                       />
                     </div>
                   )}
@@ -641,16 +673,30 @@ function TwoColumnsBlock({
                       </div>
 
                       <textarea
-                        placeholder="Enter a longer text..."
+                        
                         style={{
                           textAlign: subBlock.alignment || "left",
                           color: subBlock.color || "#000000",
                           fontFamily: subBlock.fontFamily || "inherit",
                         }}
-                        className="border rounded p-2 w-full h-32 resize-none"
+                        className="border rounded p-2 w-full h-32 resize-none focus:outline-none"
                       />
                     </div>
                   )}
+
+                  {/* Gear Icon (hidden by default, appears on hover) */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBlockClick(subBlock.id);
+                    }}
+                    className="absolute top-1 right-1 text-gray-500 hover:text-gray-800
+                                 opacity-0 group-hover:opacity-100
+                                 bg-transparent border-none shadow-none p-0 cursor-pointer
+                                 transition-opacity duration-200"
+                  >
+                    <FontAwesomeIcon icon={faWrench} />
+                  </button>
                 </div>
               );
             })
@@ -658,26 +704,6 @@ function TwoColumnsBlock({
         </div>
       </div>
 
-      {/* Bottom-centered + button (to add a block under the entire two-column block) */}
-      <div
-        className="
-          absolute left-1/2 transform -translate-x-1/2
-          bottom-[-12px]
-          opacity-0 group-hover:opacity-100
-          transition-opacity duration-200
-        "
-      >
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            // Insert new block after this two-column block
-            addBlock(blockIndex, "text"); // or open your normal tooltip
-          }}
-          className="bg-blue-600 text-white p-1 rounded-full shadow"
-        >
-          +
-        </button>
-      </div>
     </div>
   );
 }

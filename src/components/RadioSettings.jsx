@@ -21,6 +21,7 @@ const RadioSettings = ({
   moveBlockDown,
   setBlocks,
   setActiveBlockId,
+  deleteBlock,
 }) => {
   const [showAlignmentDropdown, setShowAlignmentDropdown] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -136,7 +137,7 @@ const RadioSettings = ({
       {/* Delete Block */}
       <button
         onClick={() =>
-          setBlocks((prev) => prev.filter((b) => b.id !== block.id))
+          deleteBlock(block.id)
         }
         className="text-red-500 hover:text-red-700"
       >

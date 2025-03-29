@@ -25,6 +25,7 @@ const HeaderSettings = ({
     moveBlockDown,
     setBlocks,
     setActiveBlockId,
+    deleteBlock,
 }) => {
     const [showHeadingDropdown, setShowHeadingDropdown] = useState(false);
     const [showAlignmentDropdown, setShowAlignmentDropdown] = useState(false);
@@ -195,7 +196,7 @@ const HeaderSettings = ({
             {/* Delete */}
             <button
                 onClick={() =>
-                    setBlocks((prev) => prev.filter((b) => b.id !== block.id))
+                    deleteBlock(block.id)
                 }
                 className="text-red-500 hover:text-red-700"
             >

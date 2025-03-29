@@ -3,6 +3,7 @@ import ViewGuides from "./components/Viewguides";
 import CreateGuide from "./components/Createguide";
 import GuidePreview from "./components/Guidepreview";
 import ModalsSection from "./components/Modalssection";
+import ModalSidebar from "./components/ModalSidebar";
 
 const App = () => {
   const [history, setHistory] = useState(["view-guides"]); // Tracks visited sections
@@ -17,11 +18,17 @@ const App = () => {
     }
   };
 
+  const [showModal, setShowModal] = useState(false);
+
+  // Modal width state
+  const [modalWidth, setModalWidth] = useState(600);
+
   // Get the current section
   const currentPage = history[history.length - 1];
 
   return (
-    <div className="flex flex-col h-screen w-[400px] bg-[#1E3A8A]">
+    <div>
+    <div className="flex flex-col h-screen w-[350px] bg-[#1E3A8A] fixed z-[9999] ">
       <div className="flex items-center justify-between text-lg h-[70px] mx-auto p-4 text-white w-full text-center bg-blue-100">
         <button onClick={goBack} className="text-[#1E3A8A]">Back</button>
         <div className="flex items-center mx-auto">
@@ -34,8 +41,13 @@ const App = () => {
       {currentPage === "view-guides" && <ViewGuides navigateTo={navigateTo} />}
       {currentPage === "create-guide" && <CreateGuide navigateTo={navigateTo} />}
       {currentPage === "guide-preview" && <GuidePreview navigateTo={navigateTo} />}
-      {currentPage === "modal-section" && <ModalsSection navigateTo={navigateTo} />}
+      {currentPage === "modal-section" && <ModalSidebar navigateTo={navigateTo} setModalWidth={setModalWidth} modalWidth={modalWidth} setShowModal={setShowModal} />}
 
+    </div>
+
+    {/* Render Modals */}
+    {showModal && <ModalsSection navigateTo={navigateTo} modalWidth={modalWidth} setShowModal={setShowModal} />}
+   
     </div>
   );
 };

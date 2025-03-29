@@ -18,6 +18,7 @@ const VideoSettings = (props) => {
     setCurrentVideoBlockId,
     videoInputRef,
     index,
+    deleteBlock
   } = props;
 
   // Called when user moves the width slider.
@@ -41,7 +42,7 @@ const VideoSettings = (props) => {
 
   // Delete the block.
   const handleDeleteBlock = () => {
-    setBlocks((prev) => prev.filter((b) => b.id !== block.id));
+    deleteBlock(block.id);
   };
 
   // Close the settings bar.

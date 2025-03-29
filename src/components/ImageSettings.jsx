@@ -20,7 +20,8 @@ const ImageSettings = (props) => {
       setActiveBlockId,
       setCurrentImageBlockId,
       fileInputRef,
-     index
+     index,
+     deleteBlock
     } = props;
   
     const handleWidthChange = (e) => {
@@ -42,7 +43,7 @@ const ImageSettings = (props) => {
     };
   
     const handleDeleteBlock = () => {
-      setBlocks((prev) => prev.filter((b) => b.id !== block.id));
+      props.deleteBlock(block.id);
     };
   
     const handleCloseBar = () => {

@@ -273,40 +273,49 @@ export default function ModalBlockEditor({modalWidth, setShowModal}) {
   const positionSettingsBar = (blockId) => {
     const element = blockRefs.current[blockId];
     const modalElement = modalRef.current;
-
+  
     if (!element) return;
-
+  
     const rect = element.getBoundingClientRect();
     const modalRect = modalElement?.getBoundingClientRect();
-
+  
     const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
-
+  
+    // If we can't measure the modal, just position under the block.
     if (!modalRect) {
-      // fallback logic if modal is missing
       setSettingsPos({
         x: rect.left + scrollLeft,
         y: rect.bottom + scrollTop,
       });
       return;
     }
-
+  
+    // Horizontal position: near the left edge of the modal + some padding
+    const x = modalRect.left + scrollLeft + 16;
+  
+    // We’ll use a “margin” threshold to decide if we’re near the bottom.
+    // Adjust "margin" if your dropdown is taller or shorter.
+    const margin = 200; 
     const blockBottom = rect.bottom;
     const modalBottom = modalRect.bottom;
-
-    let x = modalRect.left + scrollLeft + 16; // 🔥 aligned to left edge of modal + some padding
+  
     let y;
-
-    if (blockBottom > modalBottom - 100) {
-      // Place at the bottom of modal
-      y = modalRect.bottom + scrollTop - 48; // Adjust vertical offset as needed
+  
+    // If the block is too close to the modal’s bottom,
+    // place the settings bar above the block instead.
+    if (blockBottom + margin > modalBottom) {
+      // Place it above (adjust offset as needed)
+      // e.g., subtract 100 to ensure it appears fully above
+      y = rect.top + scrollTop - 100;
     } else {
       // Default: just under the block
-      y = rect.bottom + scrollTop;
+      y = blockBottom + scrollTop;
     }
-
+  
     setSettingsPos({ x, y });
   };
+  
 
 
 
@@ -825,9 +834,9 @@ export default function ModalBlockEditor({modalWidth, setShowModal}) {
       />
 
       
-        <div className="fixed inset-0 flex justify-center items-center z-50">
+        <div className="fixed inset-0 flex justify-center items-center z-50 overflow-y-auto">
           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div ref={modalRef} className="bg-white rounded-lg shadow-lg w-full  p-6 relative max-h-[464px] overflow-y-scroll  "  style={{ width: modalWidth + "px" }} >
+            <div ref={modalRef} className="bg-white rounded-lg shadow-lg w-full  p-6 relative max-h-[600px] overflow-y-scroll  "  style={{ width: modalWidth + "px" }} >
               {/* Close Button */}
               <button
                 onClick={() => setShowModal(false)}

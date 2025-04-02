@@ -22,32 +22,53 @@ const App = () => {
 
   // Modal width state
   const [modalWidth, setModalWidth] = useState(600);
+  const [modalBgColor, setModalBgColor] = useState("#ffffff");
+  const [skippable, setSkippable] = useState(false); // State for skippable step toggle
+  const [modalPosition, setModalPosition] = useState("center");
 
   // Get the current section
   const currentPage = history[history.length - 1];
 
   return (
     <div>
-    <div className="flex flex-col h-screen w-[350px] bg-[#1E3A8A] fixed z-[9999] ">
-      <div className="flex items-center justify-between text-lg h-[70px] mx-auto p-4 text-white w-full text-center bg-blue-100">
-        <button onClick={goBack} className="text-[#1E3A8A]">Back</button>
-        <div className="flex items-center mx-auto">
-          <img src="/partylogo.png" alt="Party Logo" className="h-8 w-8 mr-2" />
-          <span className="text-[#1E3A8A]">Boarding Party</span>
+      <div className="flex flex-col h-screen w-[350px] bg-[#1E3A8A] fixed z-[9999] ">
+        <div className="flex items-center justify-between text-lg h-[70px] mx-auto p-4 text-white w-full text-center bg-blue-100">
+          <button onClick={() => { goBack(); if (currentPage === 'modal-section') setShowModal(false); }} className="text-[#1E3A8A]">Back</button>
+          <div className="flex items-center mx-auto">
+            <img src="/partylogo.png" alt="Party Logo" className="h-8 w-8 mr-2" />
+            <span className="text-[#1E3A8A]">Boarding Party</span>
+          </div>
+          <div className="w-12"></div> {/* Placeholder to balance the flex layout */}
         </div>
-        <div className="w-12"></div> {/* Placeholder to balance the flex layout */}
+        {/* Render Components Based on Page */}
+        {currentPage === "view-guides" && <ViewGuides navigateTo={navigateTo} />}
+        {currentPage === "create-guide" && <CreateGuide navigateTo={navigateTo} />}
+        {currentPage === "guide-preview" && <GuidePreview navigateTo={navigateTo} />}
+        {currentPage === "modal-section" &&
+          <ModalSidebar navigateTo={navigateTo}
+            setModalWidth={setModalWidth}
+            modalWidth={modalWidth}
+            setShowModal={setShowModal}
+            modalBgColor={modalBgColor}
+            setModalBgColor={setModalBgColor}
+            skippable={skippable}
+            setSkippable={setSkippable}
+            setModalPosition={setModalPosition}
+          />}
+
       </div>
-      {/* Render Components Based on Page */}
-      {currentPage === "view-guides" && <ViewGuides navigateTo={navigateTo} />}
-      {currentPage === "create-guide" && <CreateGuide navigateTo={navigateTo} />}
-      {currentPage === "guide-preview" && <GuidePreview navigateTo={navigateTo} />}
-      {currentPage === "modal-section" && <ModalSidebar navigateTo={navigateTo} setModalWidth={setModalWidth} modalWidth={modalWidth} setShowModal={setShowModal} />}
 
-    </div>
+      {/* Render Modals */}
+      {showModal &&
+        <ModalsSection
+          navigateTo={navigateTo}
+          modalWidth={modalWidth}
+          setShowModal={setShowModal}
+          modalBgColor={modalBgColor}
+          skippable={skippable} 
+          modalPosition={modalPosition} 
+        />}
 
-    {/* Render Modals */}
-    {showModal && <ModalsSection navigateTo={navigateTo} modalWidth={modalWidth} setShowModal={setShowModal} />}
-   
     </div>
   );
 };

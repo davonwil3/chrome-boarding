@@ -14,7 +14,7 @@ import LargeInputSettings from "./LargeInputSettings";
 import TwoColumnBlock from "./TwoColumnsBlock";
 
 
-export default function ModalBlockEditor({modalWidth, setShowModal}) {
+export default function ModalBlockEditor({ modalWidth, setShowModal, modalBgColor, skippable, modalPosition }) {
 
   // Each block has: id, type, content
   const [blocks, setBlocks] = useState([]);
@@ -273,15 +273,15 @@ export default function ModalBlockEditor({modalWidth, setShowModal}) {
   const positionSettingsBar = (blockId) => {
     const element = blockRefs.current[blockId];
     const modalElement = modalRef.current;
-  
+
     if (!element) return;
-  
+
     const rect = element.getBoundingClientRect();
     const modalRect = modalElement?.getBoundingClientRect();
-  
+
     const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  
+
     // If we can't measure the modal, just position under the block.
     if (!modalRect) {
       setSettingsPos({
@@ -290,18 +290,18 @@ export default function ModalBlockEditor({modalWidth, setShowModal}) {
       });
       return;
     }
-  
+
     // Horizontal position: near the left edge of the modal + some padding
     const x = modalRect.left + scrollLeft + 16;
-  
+
     // We’ll use a “margin” threshold to decide if we’re near the bottom.
     // Adjust "margin" if your dropdown is taller or shorter.
-    const margin = 200; 
+    const margin = 200;
     const blockBottom = rect.bottom;
     const modalBottom = modalRect.bottom;
-  
+
     let y;
-  
+
     // If the block is too close to the modal’s bottom,
     // place the settings bar above the block instead.
     if (blockBottom + margin > modalBottom) {
@@ -312,10 +312,10 @@ export default function ModalBlockEditor({modalWidth, setShowModal}) {
       // Default: just under the block
       y = blockBottom + scrollTop;
     }
-  
+
     setSettingsPos({ x, y });
   };
-  
+
 
 
 
@@ -774,12 +774,12 @@ export default function ModalBlockEditor({modalWidth, setShowModal}) {
             >
               <span className="text-black">Delete Columns</span> <FontAwesomeIcon icon={faTrash} />
             </button>
-             {/* Close Button */}
-             <button
-                onClick={() => setActiveBlockId(null)}
-                className="text-gray-500 hover:text-gray-800 absolute top-1 right-1"
+            {/* Close Button */}
+            <button
+              onClick={() => setActiveBlockId(null)}
+              className="text-gray-500 hover:text-gray-800 absolute top-1 right-1"
             >
-                ✖
+              ✖
             </button>
           </div>
         );
@@ -801,7 +801,7 @@ export default function ModalBlockEditor({modalWidth, setShowModal}) {
 
   return (
     <div className="p-4">
-      
+
       {/* Hidden file input */}
       <input
         type="file"
@@ -833,374 +833,390 @@ export default function ModalBlockEditor({modalWidth, setShowModal}) {
         }}
       />
 
-      
-        <div className="fixed inset-0 flex justify-center items-center z-50 overflow-y-auto">
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div ref={modalRef} className="bg-white rounded-lg shadow-lg w-full  p-6 relative max-h-[600px] overflow-y-scroll  "  style={{ width: modalWidth + "px" }} >
-              {/* Close Button */}
+
+      <div className="fixed inset-0 flex justify-center items-center z-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div
+            ref={modalRef}
+            className={`bg-white rounded-lg shadow-lg w-full p-6 relative max-h-[600px] overflow-y-scroll
+              ${modalPosition === 'top' ? 'mt-10 self-start' : ''}
+              ${modalPosition === 'center' ? 'my-auto self-center' : ''}
+              ${modalPosition === 'bottom' ? 'mb-10 self-end' : ''}
+            `}
+            style={{ width: modalWidth + 'px', backgroundColor: modalBgColor }}
+          >
+            {/* Close Button based off skippable state */}
+            {skippable && (
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
+                style={{ fontSize: "20px", cursor: "pointer" }}
               >
-                ✖
+                {/* Close Icon */}
+                <span className="text-black">✖</span>
               </button>
-              <div className="">
-                {blocks.filter((block) => !block.isSubBlock).map((block, index) => {
+            )}
+            <div className="">
+              {blocks.filter((block) => !block.isSubBlock).map((block, index) => {
 
-                  const isActive = block.id === activeBlockId;
-                  return (
-                    <div
-                      key={block.id}
-                      className="relative group p-2 border border-transparent hover:border-blue-600"
-                      ref={(el) => (blockRefs.current[block.id] = el)}
+                const isActive = block.id === activeBlockId;
+                return (
+                  <div
+                    key={block.id}
+                    className="relative group p-2 border border-transparent hover:border-blue-600"
+                    ref={(el) => (blockRefs.current[block.id] = el)}
 
-                    >
-                      {/* Editable content */}
-                      {block.type === "text" && (
+                  >
+                    {/* Editable content */}
+                    {block.type === "text" && (
+                      <div
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="min-h-[40px] outline-none p-2"
+                        onBlur={(e) =>
+                          updateBlockContent(block.id, e.target.innerText)
+                        }
+                        style={{ textAlign: block.alignment, color: block.color, textDecoration: block.isUnderlined ? 'underline' : 'none', fontWeight: block.isBold ? 'bold' : 'normal', fontStyle: block.isItalic ? 'italic' : 'normal', fontFamily: block.fontFamily, fontSize: block.fontSize }}
+                      >
+                        {block.content || "Enter text..."}
+                      </div>
+                    )}
+                    {block.type === "header" && (() => {
+
+                      const TagName = block.level || "h2";
+
+                      // 2. Map the heading level to a Tailwind class
+
+                      const headingSizeClass = (() => {
+                        if (!block.level) return "text-2xl"; // fallback if somehow still undefined
+                        switch (block.level) {
+                          case "h1":
+                            return "text-4xl";
+                          case "h2":
+                            return "text-3xl";
+                          case "h3":
+                            return "text-xl";
+                          default:
+                            return "text-2xl";
+                        }
+                      })();
+
+                      return (
+                        <TagName
+                          contentEditable
+                          suppressContentEditableWarning
+                          style={{ textAlign: block.alignment, color: block.color, textDecoration: block.isUnderlined ? 'underline' : 'none', fontWeight: block.isBold ? 'bold' : 'normal', fontStyle: block.isItalic ? 'italic' : 'normal', fontFamily: block.fontFamily }}
+                          // Use the dynamic class instead of a fixed text size
+                          className={`font-bold ${headingSizeClass} outline-none p-2`}
+                          onBlur={(e) => updateBlockContent(block.id, e.target.textContent)}
+                        >
+                          {block.content}
+                        </TagName>
+                      );
+                    })()}
+                    {block.type === "image" && (
+                      <div>
+
+                        <div className="flex items-center justify-center">
+                          {block.content ? (
+                            <img
+                              src={block.content}
+                              alt=""
+                              style={{
+                                width: block.width || "50%",
+                                borderRadius: block.borderRadius || "0",
+                                maxWidth: "100%",
+                                height: "auto",
+                                objectFit: "cover",
+                              }}
+                            />
+
+                          ) : (
+                            <div className="text-gray-500">No image selected</div>
+                          )}
+                        </div>
+
+                      </div>
+                    )}
+                    {block.type === "video" && (
+                      <div className="flex items-center justify-center">
+                        <div>
+                          {block.content ? (
+                            <VideoBlock block={block} />
+
+
+                          ) : (
+                            <div className="text-gray-500">No video selected</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {block.type === "button" && (
+                      <div style={{ textAlign: block.alignment || "left" }} >
+                        <button
+                          className="px-4 py-2 rounded"
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={(e) => updateBlockContent(block.id, e.target.innerText)}
+                          style={{
+                            backgroundColor: block.backgroundColor || "#2563eb",
+                            color: block.color || "white",
+                            borderRadius: block.borderRadius || "8px",
+                            fontSize: block.fontSize || "16px",
+                            // textAlign here affects the button's text content,
+                            // but the div wraps the button for horizontal placement.
+                          }}
+                        >
+                          {block.content || "Button"}
+                        </button>
+                      </div>
+                    )}
+
+                    {block.type === "radio" && (
+                      <div
+                        style={{
+                          textAlign: block.alignment || "left",
+                          color: block.color || "#000000",
+                          fontFamily: block.fontFamily || "inherit",
+                        }}
+                        className="p-2"
+                      >
+                        {/* Editable Title */}
                         <div
                           contentEditable
                           suppressContentEditableWarning
-                          className="min-h-[40px] outline-none p-2"
-                          onBlur={(e) =>
-                            updateBlockContent(block.id, e.target.innerText)
-                          }
-                          style={{ textAlign: block.alignment, color: block.color, textDecoration: block.isUnderlined ? 'underline' : 'none', fontWeight: block.isBold ? 'bold' : 'normal', fontStyle: block.isItalic ? 'italic' : 'normal', fontFamily: block.fontFamily, fontSize: block.fontSize }}
-                        >
-                          {block.content || "Enter text..."}
-                        </div>
-                      )}
-                      {block.type === "header" && (() => {
-
-                        const TagName = block.level || "h2";
-
-                        // 2. Map the heading level to a Tailwind class
-
-                        const headingSizeClass = (() => {
-                          if (!block.level) return "text-2xl"; // fallback if somehow still undefined
-                          switch (block.level) {
-                            case "h1":
-                              return "text-4xl";
-                            case "h2":
-                              return "text-3xl";
-                            case "h3":
-                              return "text-xl";
-                            default:
-                              return "text-2xl";
-                          }
-                        })();
-
-                        return (
-                          <TagName
-                            contentEditable
-                            suppressContentEditableWarning
-                            style={{ textAlign: block.alignment, color: block.color, textDecoration: block.isUnderlined ? 'underline' : 'none', fontWeight: block.isBold ? 'bold' : 'normal', fontStyle: block.isItalic ? 'italic' : 'normal', fontFamily: block.fontFamily }}
-                            // Use the dynamic class instead of a fixed text size
-                            className={`font-bold ${headingSizeClass} outline-none p-2`}
-                            onBlur={(e) => updateBlockContent(block.id, e.target.textContent)}
-                          >
-                            {block.content}
-                          </TagName>
-                        );
-                      })()}
-                      {block.type === "image" && (
-                        <div>
-
-                          <div className="flex items-center justify-center">
-                            {block.content ? (
-                              <img
-                                src={block.content}
-                                alt=""
-                                style={{
-                                  width: block.width || "50%",
-                                  borderRadius: block.borderRadius || "0",
-                                  maxWidth: "100%",
-                                  height: "auto",
-                                  objectFit: "cover",
-                                }}
-                              />
-
-                            ) : (
-                              <div className="text-gray-500">No image selected</div>
-                            )}
-                          </div>
-
-                        </div>
-                      )}
-                      {block.type === "video" && (
-                        <div className="flex items-center justify-center">
-                          <div>
-                            {block.content ? (
-                              <VideoBlock block={block} />
-
-
-                            ) : (
-                              <div className="text-gray-500">No video selected</div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {block.type === "button" && (
-                        <div style={{ textAlign: block.alignment || "left" }} >
-                          <button
-                            className="px-4 py-2 rounded"
-                            contentEditable
-                            suppressContentEditableWarning
-                            onBlur={(e) => updateBlockContent(block.id, e.target.innerText)}
-                            style={{
-                              backgroundColor: block.backgroundColor || "#2563eb",
-                              color: block.color || "white",
-                              borderRadius: block.borderRadius || "8px",
-                              fontSize: block.fontSize || "16px",
-                              // textAlign here affects the button's text content,
-                              // but the div wraps the button for horizontal placement.
-                            }}
-                          >
-                            {block.content || "Button"}
-                          </button>
-                        </div>
-                      )}
-
-                      {block.type === "radio" && (
-                        <div
+                          onBlur={(e) => {
+                            const newTitle = e.currentTarget.textContent.trim();
+                            updateRadioTitle(block.id, newTitle);
+                          }}
+                          className="mb-4 text-lg font-semibold outline-none"
                           style={{
                             textAlign: block.alignment || "left",
-                            color: block.color || "#000000",
                             fontFamily: block.fontFamily || "inherit",
+                            color: block.color || "#000000",
                           }}
-                          className="p-2"
                         >
-                          {/* Editable Title */}
+                          {block.title || "Untitled Question"}
+                        </div>
+
+                        {/* Radio Options */}
+                        {block.content.map((option, i) => (
                           <div
-                            contentEditable
-                            suppressContentEditableWarning
-                            onBlur={(e) => {
-                              const newTitle = e.currentTarget.textContent.trim();
-                              updateRadioTitle(block.id, newTitle);
-                            }}
-                            className="mb-4 text-lg font-semibold outline-none"
+                            key={i}
+                            // If alignment is "right", use row-reverse so the input is visually on the right
+                            className={`group relative flex items-center mb-2 ${block.alignment === "right" ? "flex-row-reverse" : ""
+                              }`}
                             style={{
-                              textAlign: block.alignment || "left",
-                              fontFamily: block.fontFamily || "inherit",
-                              color: block.color || "#000000",
+                              // Left, center, or right alignment for the whole row
+                              justifyContent:
+                                block.alignment === "center"
+                                  ? "center"
+                                  : block.alignment === "right"
+                                    ? "flex-end"
+                                    : "flex-start",
                             }}
                           >
-                            {block.title || "Untitled Question"}
-                          </div>
+                            {/* Radio input (first in DOM, but row-reverse puts it on the right visually) */}
+                            <input
+                              type="radio"
+                              name={`radio-${block.id}`}
+                              id={`radio-${block.id}-${i}`}
+                              className="mr-2"
+                            />
 
-                          {/* Radio Options */}
-                          {block.content.map((option, i) => (
-                            <div
-                              key={i}
-                              // If alignment is "right", use row-reverse so the input is visually on the right
-                              className={`group relative flex items-center mb-2 ${block.alignment === "right" ? "flex-row-reverse" : ""
-                                }`}
-                              style={{
-                                // Left, center, or right alignment for the whole row
-                                justifyContent:
-                                  block.alignment === "center"
-                                    ? "center"
-                                    : block.alignment === "right"
-                                      ? "flex-end"
-                                      : "flex-start",
+                            {/* Editable label text using a callback ref to prevent cursor jump */}
+                            <span
+                              // A "callback ref" sets the textContent only if needed,
+                              // so React won't overwrite user edits mid-typing.
+                              ref={(node) => {
+                                if (node && node.textContent !== option) {
+                                  node.textContent = option;
+                                }
                               }}
+                              contentEditable
+                              suppressContentEditableWarning
+                              onBlur={(e) => {
+                                const newText = e.currentTarget.textContent.trim();
+                                if (newText !== "") {
+                                  updateRadioOption(block.id, i, newText);
+                                }
+                              }}
+                              className="p-1 rounded w-full outline-none"
+                              style={{
+                                color: block.color || "#000000",
+                                fontFamily: block.fontFamily || "inherit",
+                                textAlign: block.alignment || "left",
+                              }}
+                            />
+
+                            {/* Trash icon; on the left side if alignment === 'right', else right side */}
+                            <button
+                              type="button"
+                              onClick={() => removeRadioOption(block.id, i)}
+                              className={`absolute ${block.alignment === 'right' ? 'left-0 ml-2' : 'right-0 mr-2'
+                                } opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 z-10`}
                             >
-                              {/* Radio input (first in DOM, but row-reverse puts it on the right visually) */}
-                              <input
-                                type="radio"
-                                name={`radio-${block.id}`}
-                                id={`radio-${block.id}-${i}`}
-                                className="mr-2"
-                              />
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                              {/* Editable label text using a callback ref to prevent cursor jump */}
-                              <span
-                                // A "callback ref" sets the textContent only if needed,
-                                // so React won't overwrite user edits mid-typing.
-                                ref={(node) => {
-                                  if (node && node.textContent !== option) {
-                                    node.textContent = option;
-                                  }
-                                }}
-                                contentEditable
-                                suppressContentEditableWarning
-                                onBlur={(e) => {
-                                  const newText = e.currentTarget.textContent.trim();
-                                  if (newText !== "") {
-                                    updateRadioOption(block.id, i, newText);
-                                  }
-                                }}
-                                className="p-1 rounded w-full outline-none"
-                                style={{
-                                  color: block.color || "#000000",
-                                  fontFamily: block.fontFamily || "inherit",
-                                  textAlign: block.alignment || "left",
-                                }}
-                              />
-
-                              {/* Trash icon; on the left side if alignment === 'right', else right side */}
-                              <button
-                                type="button"
-                                onClick={() => removeRadioOption(block.id, i)}
-                                className={`absolute ${block.alignment === 'right' ? 'left-0 ml-2' : 'right-0 mr-2'
-                                  } opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 z-10`}
-                              >
-                                <FontAwesomeIcon icon={faTrash} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {block.type === "smallinput" && (
+                    {block.type === "smallinput" && (
+                      <div
+                        style={{
+                          textAlign: block.alignment || "left",
+                          color: block.color || "#000000",
+                          fontFamily: block.fontFamily || "inherit",
+                        }}
+                        className="p-2"
+                      >
+                        {/* Editable Title for the input label */}
                         <div
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={(e) => {
+                            const newTitle = e.currentTarget.textContent.trim();
+                            updateInputTitle(block.id, newTitle);
+                          }}
+                          className="mb-2 text-base font-semibold outline-none"
+                          style={{
+                            textAlign: block.alignment || "left",
+                          }}
+                        >
+                          {block.title || "Enter Label..."}
+                        </div>
+
+                        {/* Actual input box */}
+                        <input
+                          type="text"
                           style={{
                             textAlign: block.alignment || "left",
                             color: block.color || "#000000",
                             fontFamily: block.fontFamily || "inherit",
                           }}
-                          className="p-2"
-                        >
-                          {/* Editable Title for the input label */}
-                          <div
-                            contentEditable
-                            suppressContentEditableWarning
-                            onBlur={(e) => {
-                              const newTitle = e.currentTarget.textContent.trim();
-                              updateInputTitle(block.id, newTitle);
-                            }}
-                            className="mb-2 text-base font-semibold outline-none"
-                            style={{
-                              textAlign: block.alignment || "left",
-                            }}
-                          >
-                            {block.title || "Enter Label..."}
-                          </div>
-
-                          {/* Actual input box */}
-                          <input
-                            type="text"
-                            style={{
-                              textAlign: block.alignment || "left",
-                              color: block.color || "#000000",
-                              fontFamily: block.fontFamily || "inherit",
-                            }}
-                            className="border rounded px-2 py-2 w-full focus:outline-none"
-                          />
-                          </div>
-                          )}
-
-                          {block.type === "largeinput" && (
-                          <div
-                            style={{
-                              textAlign: block.alignment || "left",
-                              color: block.color || "#000000",
-                              fontFamily: block.fontFamily || "inherit",
-                            }}
-                            className="p-2"
-                          >
-                            {/* Editable Title (similar to small input) */}
-                          <div
-                            contentEditable
-                            suppressContentEditableWarning
-                            onBlur={(e) => {
-                              const newTitle = e.currentTarget.textContent.trim();
-                              updateLargeInputTitle(block.id, newTitle);
-                            }}
-                            className="mb-2 text-base font-semibold outline-none"
-                            style={{
-                              textAlign: block.alignment || "left",
-                            }}
-                          >
-                            {block.title || "Enter Label..."}
-                          </div>
-
-                          {/* Actual Textarea */}
-                          <textarea
-                           
-                            style={{
-                              textAlign: block.alignment || "left",
-                              color: block.color || "#000000",
-                              fontFamily: block.fontFamily || "inherit",
-                            }}
-                            className="border rounded p-2 w-full h-32 resize-none focus:outline-none"
-                          />
-                        </div>
-                      )}
-
-                      {block.type === "twocolumns" && (
-                        <TwoColumnBlock
-                          key={block.id}
-                          block={block}
-                          blocks={blocks}
-                          // The primary setter for blocks state:
-                          setBlocks={setBlocks}
-                          // For generating new IDs, if you need it inside TwoColumnBlock:
-                          idCounterRef={idCounterRef}
-                          // If you have a helper that adds sub-blocks to a column
-                          addSubBlockToColumn={addSubBlockToColumn}
-                          // Existing update functions (for radio, input, etc.)
-                          updateBlockContent={updateBlockContent}
-                          updateRadioOption={updateRadioOption}
-                          updateRadioTitle={updateRadioTitle}
-                          removeRadioOption={removeRadioOption}
-                          updateInputTitle={updateInputTitle}
-                          updateLargeInputTitle={updateLargeInputTitle}
-                          handleBlockClick={handleBlockClick}
-                          blockRefs={blockRefs}
-
-                          // If you need to open your tooltip:
-                          setTooltipIndex={setTooltipIndex}
+                          className="border rounded px-2 py-2 w-full focus:outline-none"
                         />
-                      )}
+                      </div>
+                    )}
 
-
-
-                      {/* Gear Icon (hidden by default, appears on hover) */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleBlockClick(block.id);
+                    {block.type === "largeinput" && (
+                      <div
+                        style={{
+                          textAlign: block.alignment || "left",
+                          color: block.color || "#000000",
+                          fontFamily: block.fontFamily || "inherit",
                         }}
-                        className="absolute top-0 right-0 text-gray-500 hover:text-gray-800
+                        className="p-2"
+                      >
+                        {/* Editable Title (similar to small input) */}
+                        <div
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={(e) => {
+                            const newTitle = e.currentTarget.textContent.trim();
+                            updateLargeInputTitle(block.id, newTitle);
+                          }}
+                          className="mb-2 text-base font-semibold outline-none"
+                          style={{
+                            textAlign: block.alignment || "left",
+                          }}
+                        >
+                          {block.title || "Enter Label..."}
+                        </div>
+
+                        {/* Actual Textarea */}
+                        <textarea
+
+                          style={{
+                            textAlign: block.alignment || "left",
+                            color: block.color || "#000000",
+                            fontFamily: block.fontFamily || "inherit",
+                          }}
+                          className="border rounded p-2 w-full h-32 resize-none focus:outline-none"
+                        />
+                      </div>
+                    )}
+
+                    {block.type === "twocolumns" && (
+                      <TwoColumnBlock
+                        key={block.id}
+                        block={block}
+                        blocks={blocks}
+                        // The primary setter for blocks state:
+                        setBlocks={setBlocks}
+                        // For generating new IDs, if you need it inside TwoColumnBlock:
+                        idCounterRef={idCounterRef}
+                        // If you have a helper that adds sub-blocks to a column
+                        addSubBlockToColumn={addSubBlockToColumn}
+                        // Existing update functions (for radio, input, etc.)
+                        updateBlockContent={updateBlockContent}
+                        updateRadioOption={updateRadioOption}
+                        updateRadioTitle={updateRadioTitle}
+                        removeRadioOption={removeRadioOption}
+                        updateInputTitle={updateInputTitle}
+                        updateLargeInputTitle={updateLargeInputTitle}
+                        handleBlockClick={handleBlockClick}
+                        blockRefs={blockRefs}
+
+                        // If you need to open your tooltip:
+                        setTooltipIndex={setTooltipIndex}
+                      />
+                    )}
+
+
+
+                    {/* Gear Icon (hidden by default, appears on hover) */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBlockClick(block.id);
+                      }}
+                      className="absolute top-0 right-0 text-gray-500 hover:text-gray-800
                opacity-0 group-hover:opacity-100
                bg-transparent border-none shadow-none p-0 cursor-pointer
                transition-opacity duration-200"
-                      >
-                        <FontAwesomeIcon icon={faGear} />
-                      </button>
-
-
-                      {/* Plus button  */}
-                      <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-12px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <button
-                          onClick={(e) => {
-                            setTooltipIndex(index);
-                            e.stopPropagation();
-                          }}
-                          className="bg-blue-600 text-white w-6 h-6 rounded-full shadow flex items-center justify-center text-xl leading-none"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-
-                  )
-                })}
-
-                {/* If no blocks exist, show an Add button */}
-                {blocks.length === 0 && (
-                  <div className="text-center">
-                    <button
-                      onClick={() => addBlock(-1, "text")}
-                      className="bg-blue-600 text-white px-4 py-2 rounded"
                     >
-                      Add a Block
+                      <FontAwesomeIcon icon={faGear} />
                     </button>
+
+
+                    {/* Plus button  */}
+                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-12px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <button
+                        onClick={(e) => {
+                          setTooltipIndex(index);
+                          e.stopPropagation();
+                        }}
+                        className="bg-blue-600 text-white w-6 h-6 rounded-full shadow flex items-center justify-center text-xl leading-none"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
-                )}
-                {/* Tooltip with block options */}
-                {tooltipIndex !== null && (
-                  <div className="
+
+                )
+              })}
+
+              {/* If no blocks exist, show an Add button */}
+              {blocks.length === 0 && (
+                <div className="text-center">
+                  <button
+                    onClick={() => {
+                      // Open the tooltip for adding a block
+                      setTooltipIndex({ parentId: null, column: null });
+                    }}
+
+                    className="bg-blue-600 text-white px-4 py-2 rounded"
+                  >
+                    Add a Block
+                  </button>
+                </div>
+              )}
+              {/* Tooltip with block options */}
+              {tooltipIndex !== null && (
+                <div className="
                     fixed
                     top-1/2
                     left-1/2
@@ -1214,160 +1230,160 @@ export default function ModalBlockEditor({modalWidth, setShowModal}) {
                     shadow-md
                     z-10
                   ">
-                    <div className="flex flex-col w-[400px] space-y-4">
-                      {/* close button */}
+                  <div className="flex flex-col w-[400px] space-y-4">
+                    {/* close button */}
+                    <button
+                      onClick={() => setTooltipIndex(null)}
+                      className="absolute top-1 right-1 text-gray-500 hover:text-gray-800"
+                    >
+                      ✖
+                    </button>
+                    <h2 className="font-bold text-lg">
+                      Add an element
+                    </h2>
+                    <p className="text-gray-500">
+                      Elements are the building blocks of your guide. Add an element to get started.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 mt-2 bg-gray-100 p-4">
                       <button
-                        onClick={() => setTooltipIndex(null)}
-                        className="absolute top-1 right-1 text-gray-500 hover:text-gray-800"
+                        onClick={() => {
+                          if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                            addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "text");
+                          } else {
+                            addBlock(tooltipIndex, "text");
+                          }
+                          setTooltipIndex(null);
+                        }}
+                        className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
                       >
-                        ✖
+                        <FontAwesomeIcon icon={faTextSize} className="mb-1" size="xl" />
+                        <span>Text</span>
                       </button>
-                      <h2 className="font-bold text-lg">
-                        Add an element
-                      </h2>
-                      <p className="text-gray-500">
-                        Elements are the building blocks of your guide. Add an element to get started.
-                      </p>
-                      <div className="grid grid-cols-2 gap-2 mt-2 bg-gray-100 p-4">
-                        <button
-                          onClick={() => {
-                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
-                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "text");
-                            } else {
-                              addBlock(tooltipIndex, "text");
-                            }
-                            setTooltipIndex(null);
-                          }}
-                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                        >
-                          <FontAwesomeIcon icon={faTextSize} className="mb-1" size="xl" />
-                          <span>Text</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
-                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "header");
-                            }
-                            else {
-                              addBlock(tooltipIndex, "header");
-                            }
-                            setTooltipIndex(null);
-                          }}
-                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                        >
-                          <FontAwesomeIcon icon={faH1} className="mb-1" size="xl" />
-                          <span>Header</span>
-                        </button>
-                        <button
-                          onClick={handleAddImageBlockFlexible}
-                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                        >
-                          <FontAwesomeIcon icon={faImage} className="mb-1" size="xl" />
-                          <span>Image</span>
-                        </button>
-                        <button
-                          onClick={handleAddVideoBlockFlexible}
-                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                        >
-                          <FontAwesomeIcon icon={faVideo} className="mb-1" size="xl" />
-                          <span>Video</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
-                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "button");
-                            }
-                            else {
-                              addBlock(tooltipIndex, "button");
-                            }
-                            setTooltipIndex(null);
-                          }}
-                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                        >
-                          <FontAwesomeIcon icon={faRectangleWide} className="mb-1" size="xl" />
-                          <span>Button</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
-                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "radio");
-                            }
-                            else {
-                              addBlock(tooltipIndex, "radio");
-                            }
-                            setTooltipIndex(null);
-                          }}
-                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                        >
-                          <FontAwesomeIcon icon={faCircleDot} className="mb-1" size="xl" />
-                          <span>Radio</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
-                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "smallinput");
-                            }
-                            else {
-                              addBlock(tooltipIndex, "smallinput");
-                            }
-                            setTooltipIndex(null);
-                          }}
-                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                        >
-                          <FontAwesomeIcon icon={faInputText} className="mb-1" size="xl" />
-                          <span>Small Input</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (tooltipIndex?.parentId && tooltipIndex?.column) {
-                              addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "largeinput");
-                            }
-                            else {
-                              addBlock(tooltipIndex, "largeinput");
-                            }
-                            setTooltipIndex(null);
-                          }}
-                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                        >
-                          <FontAwesomeIcon icon={faFileLines} className="mb-1" size="xl" />
-                          <span>Large Input</span>
-                        </button>
-                        <button
-                          onClick={() => addBlock(tooltipIndex, "twocolumns")}
-                          className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
-                        >
-                          <FontAwesomeIcon icon={faTableColumns} className="mb-1" size="xl" />
-                          <span>Two Columns</span>
-                        </button>
+                      <button
+                        onClick={() => {
+                          if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                            addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "header");
+                          }
+                          else {
+                            addBlock(tooltipIndex, "header");
+                          }
+                          setTooltipIndex(null);
+                        }}
+                        className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                      >
+                        <FontAwesomeIcon icon={faH1} className="mb-1" size="xl" />
+                        <span>Header</span>
+                      </button>
+                      <button
+                        onClick={handleAddImageBlockFlexible}
+                        className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                      >
+                        <FontAwesomeIcon icon={faImage} className="mb-1" size="xl" />
+                        <span>Image</span>
+                      </button>
+                      <button
+                        onClick={handleAddVideoBlockFlexible}
+                        className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                      >
+                        <FontAwesomeIcon icon={faVideo} className="mb-1" size="xl" />
+                        <span>Video</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                            addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "button");
+                          }
+                          else {
+                            addBlock(tooltipIndex, "button");
+                          }
+                          setTooltipIndex(null);
+                        }}
+                        className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                      >
+                        <FontAwesomeIcon icon={faRectangleWide} className="mb-1" size="xl" />
+                        <span>Button</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                            addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "radio");
+                          }
+                          else {
+                            addBlock(tooltipIndex, "radio");
+                          }
+                          setTooltipIndex(null);
+                        }}
+                        className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                      >
+                        <FontAwesomeIcon icon={faCircleDot} className="mb-1" size="xl" />
+                        <span>Radio</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                            addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "smallinput");
+                          }
+                          else {
+                            addBlock(tooltipIndex, "smallinput");
+                          }
+                          setTooltipIndex(null);
+                        }}
+                        className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                      >
+                        <FontAwesomeIcon icon={faInputText} className="mb-1" size="xl" />
+                        <span>Small Input</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (tooltipIndex?.parentId && tooltipIndex?.column) {
+                            addSubBlockToColumn(tooltipIndex.parentId, tooltipIndex.column, "largeinput");
+                          }
+                          else {
+                            addBlock(tooltipIndex, "largeinput");
+                          }
+                          setTooltipIndex(null);
+                        }}
+                        className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                      >
+                        <FontAwesomeIcon icon={faFileLines} className="mb-1" size="xl" />
+                        <span>Large Input</span>
+                      </button>
+                      <button
+                        onClick={() => addBlock(tooltipIndex, "twocolumns")}
+                        className="flex flex-col items-center bg-white px-3 py-6 rounded text-sm"
+                      >
+                        <FontAwesomeIcon icon={faTableColumns} className="mb-1" size="xl" />
+                        <span>Two Columns</span>
+                      </button>
 
-                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
-            {activeBlockId && (() => {
-              console.log(">> activeBlockId is:", activeBlockId);
-              const activeBlock = blocks.find((b) => b.id === activeBlockId);
-              console.log("   Found block:", activeBlock);
-
-              if (!activeBlock) return null;
-              const activeIndex = blocks.findIndex((b) => b.id === activeBlockId);
-              console.log("   Index is:", activeIndex);
-
-              return (
-                <div
-                  ref={settingsRef}
-                  style={{ position: "absolute", left: settingsPos.x, top: settingsPos.y, zIndex: 9999 }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {renderSettingsBar(activeBlock, activeIndex)}
                 </div>
-              );
-            })()}
+              )}
+            </div>
           </div>
+          {activeBlockId && (() => {
+            console.log(">> activeBlockId is:", activeBlockId);
+            const activeBlock = blocks.find((b) => b.id === activeBlockId);
+            console.log("   Found block:", activeBlock);
+
+            if (!activeBlock) return null;
+            const activeIndex = blocks.findIndex((b) => b.id === activeBlockId);
+            console.log("   Index is:", activeIndex);
+
+            return (
+              <div
+                ref={settingsRef}
+                style={{ position: "absolute", left: settingsPos.x, top: settingsPos.y, zIndex: 9999 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {renderSettingsBar(activeBlock, activeIndex)}
+              </div>
+            );
+          })()}
         </div>
-      
+      </div>
+
 
     </div>
 

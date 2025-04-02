@@ -14,7 +14,19 @@ import LargeInputSettings from "./LargeInputSettings";
 import TwoColumnBlock from "./TwoColumnsBlock";
 
 
-export default function ModalBlockEditor({ modalWidth, setShowModal, modalBgColor, skippable, modalPosition }) {
+export default function ModalBlockEditor({ modalWidth,
+  setShowModal,
+  modalBgColor,
+  skippable,
+  modalPosition,
+  cornerRoundness,
+  showBackDrop,
+  borderStyle,
+  borderWidth,
+  borderColor,
+  showBorderSettings,
+  nextButton,
+}) {
 
   // Each block has: id, type, content
   const [blocks, setBlocks] = useState([]);
@@ -44,7 +56,26 @@ export default function ModalBlockEditor({ modalWidth, setShowModal, modalBgColo
   const idCounterRef = useRef(1);
 
 
+  // Add a button to modal if nextButton is true; remove it if nextButton is false
+  useEffect(() => {
+    if (nextButton) {
+      // Add a button block to the blocks array if nextButton is true
+      const newBlock = {
+        id: idCounterRef.current,
+        type: "button", // Type of block
+        content: "Next Button", // Default content for the button
+        linkType: "next", // Default link type
+        linkValue: "#", // Default link value
+        isNextButton: true, // Unique property to identify the "Next" button
+      };
 
+      setBlocks((prevBlocks) => [...prevBlocks, newBlock]);
+      idCounterRef.current += 1; // Increment the ID counter for the next block
+    } else {
+      // Remove the "Next" button block if nextButton is false
+      setBlocks((prevBlocks) => prevBlocks.filter((block) => !block.isNextButton));
+    }
+  }, [nextButton]);
 
   // Close the color picker when clicking outside
   // Use the hook to close the color picker when clicking outside the popup
@@ -835,16 +866,25 @@ export default function ModalBlockEditor({ modalWidth, setShowModal, modalBgColo
 
 
       <div className="fixed inset-0 flex justify-center items-center z-50 overflow-y-auto">
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className={`fixed inset-0  flex justify-center items-center z-50
+         ${showBackDrop ? 'bg-black bg-opacity-50' : ''} `}>
           <div
             ref={modalRef}
-            className={`bg-white rounded-lg shadow-lg w-full p-6 relative max-h-[600px] overflow-y-scroll
-              ${modalPosition === 'top' ? 'mt-10 self-start' : ''}
-              ${modalPosition === 'center' ? 'my-auto self-center' : ''}
-              ${modalPosition === 'bottom' ? 'mb-10 self-end' : ''}
-            `}
-            style={{ width: modalWidth + 'px', backgroundColor: modalBgColor }}
+            className={`bg-white shadow-lg w-full p-6 relative max-h-[600px] overflow-y-scroll
+            ${modalPosition === 'top' ? 'mt-10 self-start' : ''}
+            ${modalPosition === 'center' ? 'my-auto self-center' : ''}
+            ${modalPosition === 'bottom' ? 'mb-10 self-end' : ''}
+          `}
+            style={{
+              width: modalWidth + 'px',
+              backgroundColor: modalBgColor,
+              borderRadius: cornerRoundness ? `${cornerRoundness}px` : '8px',
+              border: showBorderSettings
+                ? `${borderWidth}px ${borderStyle} ${borderColor}`
+                : 'none'
+            }}
           >
+
             {/* Close Button based off skippable state */}
             {skippable && (
               <button

@@ -25,13 +25,23 @@ const App = () => {
   const [modalBgColor, setModalBgColor] = useState("#ffffff");
   const [skippable, setSkippable] = useState(false); // State for skippable step toggle
   const [modalPosition, setModalPosition] = useState("center");
+  const [cornerRoundness, setCornerRoundness] = useState(8);
+  const [showBackDrop, setShowBackDrop] = useState(true);
+  // State for border style
+  const [borderStyle, setBorderStyle] = useState('solid');
+  // State for border color
+  const [borderColor, setBorderColor] = useState('#000000');
+  // State for border width
+  const [borderWidth, setBorderWidth] = useState(1); // Default border width
+  const [showBorderSettings, setShowBorderSettings] = useState(false);
+  const [nextButton, setNextButton] = useState(false); 
 
   // Get the current section
   const currentPage = history[history.length - 1];
 
   return (
     <div>
-      <div className="flex flex-col h-screen w-[350px] bg-[#1E3A8A] fixed z-[9999] ">
+      <div className="flex flex-col h-screen w-[350px] bg-[#1E3A8A] fixed z-[9999] overflow-y-auto overflow-x-hidden ">
         <div className="flex items-center justify-between text-lg h-[70px] mx-auto p-4 text-white w-full text-center bg-blue-100">
           <button onClick={() => { goBack(); if (currentPage === 'modal-section') setShowModal(false); }} className="text-[#1E3A8A]">Back</button>
           <div className="flex items-center mx-auto">
@@ -54,6 +64,22 @@ const App = () => {
             skippable={skippable}
             setSkippable={setSkippable}
             setModalPosition={setModalPosition}
+            cornerRoundness={cornerRoundness}
+            setCornerRoundness={setCornerRoundness}
+            modalPosition={modalPosition}
+            showBackDrop={showBackDrop}
+            setShowBackDrop={setShowBackDrop}
+            borderColor={borderColor} 
+            setBorderColor={setBorderColor} 
+            borderStyle={borderStyle}
+            setBorderStyle={setBorderStyle}
+            borderWidth={borderWidth}
+            setBorderWidth={setBorderWidth}
+            showBorderSettings={showBorderSettings}
+            setShowBorderSettings={setShowBorderSettings}
+            nextButton={nextButton}
+            setNextButton={setNextButton}
+
           />}
 
       </div>
@@ -65,8 +91,15 @@ const App = () => {
           modalWidth={modalWidth}
           setShowModal={setShowModal}
           modalBgColor={modalBgColor}
-          skippable={skippable} 
-          modalPosition={modalPosition} 
+          skippable={skippable}
+          modalPosition={modalPosition}
+          cornerRoundness={cornerRoundness}
+          showBackDrop={showBackDrop}
+          borderStyle={borderStyle} 
+          borderWidth={borderWidth} 
+          borderColor={borderColor}
+          showBorderSettings={showBorderSettings} 
+          nextButton={nextButton} 
         />}
 
     </div>

@@ -30,7 +30,9 @@ export default function Guidepreview({ navigateTo }) {
                             <img src="/modal.png" alt="Modal" className="w-10 h-10 mr-4" />
                             <span className="text-lg font-medium">Modal</span>
                         </div>
-                        <div className="flex items-center w-full bg-blue-700 p-4 rounded-lg  transition hover:bg-blue-800">
+                        <div className="flex items-center w-full bg-blue-700 p-4 rounded-lg  transition hover:bg-blue-800"
+                            onClick={() => navigateTo("tooltip-section") /* Placeholder for tooltip navigation */}
+                        >
                             <img src="/tooltip.png" alt="Tooltip" className="w-10 h-10 mr-4" />
                             <span className="text-lg font-medium">Tooltip</span>
                         </div>

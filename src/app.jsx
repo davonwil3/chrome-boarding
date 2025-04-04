@@ -4,6 +4,7 @@ import CreateGuide from "./components/Createguide";
 import GuidePreview from "./components/Guidepreview";
 import ModalsSection from "./components/Modalssection";
 import ModalSidebar from "./components/ModalSidebar";
+import TooltipSection from "./components/TooltipSection";
 
 const App = () => {
   const [history, setHistory] = useState(["view-guides"]); // Tracks visited sections
@@ -35,6 +36,11 @@ const App = () => {
   const [borderWidth, setBorderWidth] = useState(1); // Default border width
   const [showBorderSettings, setShowBorderSettings] = useState(false);
   const [nextButton, setNextButton] = useState(false); 
+
+  // tooltip states
+  const [tooltipSelector, setTooltipSelector] = useState("");
+
+ 
 
   // Get the current section
   const currentPage = history[history.length - 1];
@@ -81,6 +87,12 @@ const App = () => {
             setNextButton={setNextButton}
 
           />}
+        {currentPage === "tooltip-section" &&
+          <TooltipSection 
+            
+            setTooltipSelector={setTooltipSelector} 
+          />
+        }
 
       </div>
 

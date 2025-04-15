@@ -21,7 +21,7 @@ const App = () => {
 
   const [showModal, setShowModal] = useState(false);
 
-  // Modal width state
+  // Modal states
   const [modalWidth, setModalWidth] = useState(600);
   const [modalBgColor, setModalBgColor] = useState("#ffffff");
   const [skippable, setSkippable] = useState(false); // State for skippable step toggle

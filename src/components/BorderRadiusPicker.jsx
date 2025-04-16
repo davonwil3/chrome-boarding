@@ -1,7 +1,7 @@
 import React from "react";
 import Select from "react-select";
 
-// Example options for border radiu
+// Example  for border radiu
 const borderRadiusOptions = [
   { value: "0px", label: "None" },
   { value: "5px", label: "Small (5px)" },

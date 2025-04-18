@@ -11,7 +11,7 @@ const borderRadiusOptions = [
 ];
 
 export default function BorderRadiusPicker({ block, updateBorderRadius }) {
-  // Find the current selection or default to "None"
+ 
   const selectedOption =
     borderRadiusOptions.find((opt) => opt.value === block.borderRadius) ||
     borderRadiusOptions[0];
